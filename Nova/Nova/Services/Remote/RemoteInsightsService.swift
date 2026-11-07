@@ -7,6 +7,8 @@ import Foundation
 final class RemoteInsightsService: MockInsightsService {
     private let client: BackendClient
     private var weekCache: (key: Int, days: [DayPrediction], at: Date)?
+    /// What-if answers already fetched this session, by normalised question + finances.
+    private var whatIfCache: [String: WhatIfResult] = [:]
 
     init(client: BackendClient) {
         self.client = client
@@ -84,6 +86,25 @@ final class RemoteInsightsService: MockInsightsService {
     }
 
     override func whatIf(_ question: String, summary: FinancialSummary, transactions: [Transaction]) async throws -> WhatIfResult {
+        let cacheKey = Self.whatIfKey(question, summary: summary)
+        if var cached = whatIfCache[cacheKey] {
+            cached.id = UUID()
+            return cached
+        }
+        let result = try await fetchWhatIf(question, summary: summary, transactions: transactions)
+        // Only cache real backend answers, not the offline fallback.
+        if result.infographic?.theme != "offline" { whatIfCache[cacheKey] = result }
+        return result
+    }
+
+    /// Same question (ignoring case and punctuation) with roughly the same finances → same answer.
+    static func whatIfKey(_ question: String, summary: FinancialSummary) -> String {
+        let q = question.lowercased().filter { $0.isLetter || $0.isNumber || $0 == " " || $0 == "£" }
+            .split(separator: " ").joined(separator: " ")
+        return "\(q)|\(Int(summary.avgMonthly / 10))|\(Int(summary.monthlyIncome / 10))|\(Int(summary.savings / 100))"
+    }
+
+    private func fetchWhatIf(_ question: String, summary: FinancialSummary, transactions: [Transaction]) async throws -> WhatIfResult {
         struct Body: Encodable { let question: String; let summary: WireSummary }
         struct WireBreakdown: Decodable { let label: String; let amount: Double }
         struct WireProjection: Decodable { let baseline: [Double]; let scenario: [Double] }

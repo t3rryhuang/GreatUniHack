@@ -28,10 +28,13 @@ struct SimulatorView: View {
             .task(id: model.dataVersion) { await viewModel.loadTips(model: model) }
             #if DEBUG
             // Launch with `-NovaAsk "What if I cycle to work?"` to ask a question on open (for demos and screenshots).
+            // Separate several questions with "||" to ask them one after another.
             .task {
-                if let question = UserDefaults.standard.string(forKey: "NovaAsk"), viewModel.results.isEmpty, model.hasData {
-                    viewModel.question = question
-                    await viewModel.ask(model: model)
+                if let questions = UserDefaults.standard.string(forKey: "NovaAsk"), viewModel.results.isEmpty, model.hasData {
+                    for question in questions.components(separatedBy: "||") {
+                        viewModel.question = question
+                        await viewModel.ask(model: model)
+                    }
                 }
             }
             #endif
