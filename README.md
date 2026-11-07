@@ -160,14 +160,14 @@ GreatUniHack/
 
 **Requirements:** a Mac with Xcode 27.2 or later and the iOS 27.2 Simulator runtime (Xcode → Settings → Components).
 
-**Run in the Simulator (iPhone 15 Pro Max):**
+**Run in the Simulator (iPhone 15 Pro Max or iPhone 17 Pro Max):**
 
 1. Open the project:
    ```bash
    open Nova/Nova.xcodeproj
    ```
-2. In the Xcode toolbar, pick the **Nova** scheme and the **iPhone 15 Pro Max** simulator.
-   If it isn't listed: Window → Devices and Simulators → Simulators → **+**, then choose iPhone 15 Pro Max.
+2. In the Xcode toolbar, pick the **Nova** scheme and the **iPhone 15 Pro Max** or **iPhone 17 Pro Max** simulator.
+   If it isn't listed: Window → Devices and Simulators → Simulators → **+**, then choose iPhone 15 Pro Max or iPhone 17 Pro Max.
 3. Press **⌘R**.
 
 Or from the command line:
@@ -175,9 +175,10 @@ Or from the command line:
 cd Nova
 xcodebuild -project Nova.xcodeproj -scheme Nova \
   -destination 'platform=iOS Simulator,name=iPhone 15 Pro Max' build
+# or: -destination 'platform=iOS Simulator,name=iPhone 17 Pro Max'
 ```
 
-**Run on a real iPhone 15 Pro Max:**
+**Run on a real iPhone 15 Pro Max or iPhone 17 Pro Max:**
 
 1. Connect the iPhone with a cable, unlock it and tap **Trust**.
 2. On the iPhone, turn on **Developer Mode** (Settings → Privacy & Security → Developer Mode) and restart when asked.
