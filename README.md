@@ -267,6 +267,7 @@ xcodebuild -project Nova.xcodeproj -scheme Nova \
 | `-NovaBackendURL http://localhost:8000` | Use a local backend |
 | `-NovaScreen <name>` | DEBUG: open a screen at launch: `readiness`, `family`, `parent`, `graduation`, `report`, `quest`, `level`, `piggy`, `league`, `fairness`, `seasons`, `insights`, `arena`, `simulator`, `chat`, `profile` |
 | `-NovaAutoplay` / `-NovaAutoShake` | DEBUG: play a Money Quest level / shake the Piggy Bank automatically |
+| `-NovaWalkthrough` | DEBUG: tour the main screens automatically for about a minute (teen or adult), scrolling each one |
 | `-NovaScreen explorer` | DEBUG: open Nova Explorer (Teen mode). Add `-NovaExplorerTour` to walk through every zone, `-NovaExplorerSpot venue\|piccadilly\|tramStop\|northernQuarter\|park` to start somewhere else, or `-NovaExplorerOpen budget\|scam\|tram\|market\|park\|billboard\|wardrobe\|travel\|stylist` to open a panel |
 
 **2-minute demo:** launch with `-NovaTeenDemo` → Home shows Jamie's Readiness Score, daily quest, weekly boss, Money Quest and Piggy Bank → open the Piggy Bank and shake → play chapter 7 level 1 (money mules) → Profile > Demo > Fairness check (Teen A and Teen B both 681) → Road to 18 and the Readiness Report → Profile > Demo > Simulate 18th birthday.
@@ -467,5 +468,7 @@ Never commit `.env` files. They are in `.gitignore`.
 ## Screenshots
 
 Nova Explorer screenshots and a 45-second tour recording are in [docs/screenshots/explorer](docs/screenshots/explorer).
+
+One-minute app walkthroughs (recorded with `-NovaWalkthrough`, which drives the app through its main screens): [Teen mode](docs/screenshots/walkthrough/teen-walkthrough.mp4) and [Adult mode](docs/screenshots/walkthrough/adult-walkthrough.mp4).
 
 Pitch screenshots (iPhone 17 Pro Max simulator) are in [docs/screenshots](docs/screenshots): Teen Home, Readiness, Money Quest hub, a level and its summary, the Piggy Bank (light, dark and Teen A at 80%), the fairness check, Family, the borrowing sandbox, Road to 18, the Readiness Report, the parent preview, leagues, teen arenas, the pastel Insights cards and a level at the largest text size.

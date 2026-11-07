@@ -87,6 +87,15 @@ struct LaunchView: View {
     }
 }
 
+#if DEBUG
+/// One step of the DEBUG walkthrough used for screen recordings.
+private enum WalkStep {
+    case tab(Int, seconds: Double)
+    case screen(DebugScreen, seconds: Double)
+    case explorer(seconds: Double)
+}
+#endif
+
 struct MainTabView: View {
     // Launch with `-NovaTab 4` to open on a given tab (handy for demos and screenshots).
     @State private var tab = UserDefaults.standard.integer(forKey: "NovaTab")
@@ -138,7 +147,47 @@ struct MainTabView: View {
             try? FileManager.default.copyItem(at: url, to: target)
         }
         #endif
+        #if DEBUG
+        .task {
+            guard ProcessInfo.processInfo.arguments.contains("-NovaWalkthrough") else { return }
+            try? await Task.sleep(for: .seconds(3))
+            for step in walkthroughSteps(isTeen: model.isTeen) {
+                switch step {
+                case .tab(let index, let seconds):
+                    debugScreen = nil
+                    try? await Task.sleep(for: .milliseconds(500))
+                    withAnimation { tab = index }
+                    try? await Task.sleep(for: .seconds(seconds))
+                case .screen(let screen, let seconds):
+                    debugScreen = screen
+                    try? await Task.sleep(for: .seconds(seconds))
+                    debugScreen = nil
+                    try? await Task.sleep(for: .milliseconds(600))
+                case .explorer(let seconds):
+                    debugScreen = nil
+                    tab = 0
+                    debugExplorer = true
+                    try? await Task.sleep(for: .seconds(seconds))
+                }
+            }
+        }
+        #endif
         // Profile is reached from the avatar button on every tab (see `profileToolbar`),
         // keeping the tab bar at Apple's recommended maximum of five tabs.
     }
 }
+
+#if DEBUG
+extension MainTabView {
+    /// `-NovaWalkthrough`: drives the app through its main screens (about a minute) so it can be
+    /// recorded with `xcrun simctl io recordVideo`. Teen and adult get different tours.
+    fileprivate func walkthroughSteps(isTeen: Bool) -> [WalkStep] {
+        isTeen
+            ? [.tab(0, seconds: 7), .screen(.readiness, seconds: 7), .screen(.quest, seconds: 5), .screen(.piggy, seconds: 7),
+               .screen(.family, seconds: 5), .screen(.graduation, seconds: 5), .tab(3, seconds: 4), .tab(4, seconds: 5),
+               .explorer(seconds: 17)]
+            : [.tab(0, seconds: 8), .screen(.readiness, seconds: 7), .tab(1, seconds: 7), .tab(2, seconds: 6), .tab(3, seconds: 6),
+               .tab(4, seconds: 6), .screen(.chat, seconds: 5), .screen(.report, seconds: 5), .screen(.profile, seconds: 6)]
+    }
+}
+#endif
