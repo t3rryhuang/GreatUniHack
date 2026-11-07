@@ -90,6 +90,7 @@ struct LaunchView: View {
 struct MainTabView: View {
     // Launch with `-NovaTab 4` to open on a given tab (handy for demos and screenshots).
     @State private var tab = UserDefaults.standard.integer(forKey: "NovaTab")
+    @Environment(AppModel.self) private var model
     #if DEBUG
     @State private var debugScreen: DebugScreen?
     #endif
@@ -123,6 +124,16 @@ struct MainTabView: View {
         }
         .sheet(item: $debugScreen) { screen in
             if screen == .chat { screen.destination } else { NavigationStack { screen.destination } }
+        }
+        // Launch with `-NovaExportReport` to write the financial health PDF to Documents (for checking the layout).
+        .task {
+            guard ProcessInfo.processInfo.arguments.contains("-NovaExportReport"), model.hasData,
+                  let url = try? FinancialReportExporter.makePDF(name: model.user?.name ?? "You", summary: model.summary,
+                                                                 transactions: model.transactions) else { return }
+            let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+            let target = docs.appendingPathComponent("report.pdf")
+            try? FileManager.default.removeItem(at: target)
+            try? FileManager.default.copyItem(at: url, to: target)
         }
         #endif
         // Profile is reached from the avatar button on every tab (see `profileToolbar`),
