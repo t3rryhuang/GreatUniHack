@@ -87,41 +87,91 @@ struct Metric: View {
     }
 }
 
-/// Seasonal spending comparison. Ported from SeasonalBars.tsx.
-private struct SeasonalCard: View {
+/// Seasonal spending comparison in soft pastels. Ported from SeasonalBars.tsx.
+struct SeasonalCard: View {
     let seasonal: SeasonalSpend
 
-    private var rows: [(String, Double, Color)] {
-        [("Winter", seasonal.winter, NovaColor.chartBlueberry),
-         ("Spring", seasonal.spring, NovaColor.chartBroccoli),
-         ("Summer", seasonal.summer, NovaColor.chartYolk),
-         ("Autumn", seasonal.autumn, NovaColor.chartTangerine)]
+    private struct Season: Identifiable {
+        let name: String
+        let amount: Double
+        let symbol: String
+        let fill: Color
+        let ink: Color
+        let months: ClosedRange<Int>
+        var id: String { name }
+    }
+
+    private var seasons: [Season] {
+        [Season(name: "Winter", amount: seasonal.winter, symbol: "snowflake", fill: NovaColor.pastelBlue, ink: NovaColor.chartBlueberry, months: 12...14),
+         Season(name: "Spring", amount: seasonal.spring, symbol: "camera.macro", fill: NovaColor.pastelGreen, ink: NovaColor.chartBroccoli, months: 3...5),
+         Season(name: "Summer", amount: seasonal.summer, symbol: "sun.max.fill", fill: NovaColor.pastelYellow, ink: NovaColor.chartYolk, months: 6...8),
+         Season(name: "Autumn", amount: seasonal.autumn, symbol: "leaf.fill", fill: NovaColor.pastelPeach, ink: NovaColor.chartTangerine, months: 9...11)]
+    }
+
+    private var current: String {
+        let month = Calendar.current.component(.month, from: .now)
+        return seasons.first { $0.months.contains(month) || $0.months.contains(month + 12) }?.name ?? ""
     }
 
     var body: some View {
+        let list = seasons
+        let top = list.max { $0.amount < $1.amount }
+        let low = list.min { $0.amount < $1.amount }
         NovaCard {
             SectionHeader(title: "Seasonal spending", systemImage: "leaf.fill")
-            Chart(rows, id: \.0) { row in
-                BarMark(x: .value("Season", row.0), y: .value("Average per month", row.1))
-                    .foregroundStyle(row.2)
-                    .cornerRadius(6)
-                    .annotation(position: .top) {
-                        Text(row.1.gbpWhole).font(.novaMicro).foregroundStyle(NovaColor.body)
+            if let top, let low {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("\(top.name) is your priciest season").font(.novaSection).foregroundStyle(NovaColor.heading)
+                    Text("About \((top.amount - low.amount).gbpWhole) a month more than \(low.name.lowercased()).")
+                        .font(.novaCallout).foregroundStyle(NovaColor.body)
+                }
+                .accessibilityElement(children: .combine)
+            }
+            Chart(list) { season in
+                BarMark(x: .value("Season", season.name), y: .value("Average per month", season.amount), width: .ratio(0.62))
+                    .foregroundStyle(season.fill)
+                    .clipShape(UnevenRoundedRectangle(topLeadingRadius: 10, topTrailingRadius: 10, style: .continuous))
+                    .annotation(position: .top, spacing: 6) {
+                        Text(season.amount.gbpWhole)
+                            .font(.novaCaption.weight(.semibold))
+                            .foregroundStyle(season.ink)
                     }
+                    .accessibilityLabel(season.name + (season.name == current ? ", this season" : ""))
+                    .accessibilityValue("\(season.amount.gbpWhole) a month on average")
             }
             .chartYAxis(.hidden)
-            .frame(height: 180)
-            let delta = seasonal.winter - seasonal.summer
-            Text(delta >= 0
-                 ? "You spend \(delta.gbpWhole) more a month in winter than in summer."
-                 : "You spend \((-delta).gbpWhole) more a month in summer than in winter.")
-                .font(.novaCallout)
-                .foregroundStyle(NovaColor.body)
+            .chartXAxis {
+                AxisMarks { value in
+                    AxisValueLabel {
+                        if let name = value.as(String.self), let season = list.first(where: { $0.name == name }) {
+                            VStack(spacing: 2) {
+                                Image(systemName: season.symbol).foregroundStyle(season.ink)
+                                Text(name).font(.novaCaption.weight(name == current ? .semibold : .regular))
+                                    .foregroundStyle(name == current ? NovaColor.heading : NovaColor.body)
+                            }
+                        }
+                    }
+                }
+            }
+            .frame(height: 200)
+            .accessibilityLabel("Average monthly spending by season")
+            HStack(spacing: Spacing.xs) {
+                ForEach(list) { season in
+                    if season.name == current {
+                        Label("Now: \(season.name.lowercased())", systemImage: season.symbol)
+                            .font(.novaCaption.weight(.semibold))
+                            .foregroundStyle(season.ink)
+                            .padding(.horizontal, Spacing.sm).padding(.vertical, Spacing.xxs)
+                            .background(season.fill, in: Capsule())
+                    }
+                }
+                Spacer()
+                Text("Average per month").font(.novaCaption).foregroundStyle(NovaColor.muted)
+            }
         }
     }
 }
 
-/// Monthly spend with a dashed projection. Ported from SpendTrajectory.tsx.
 private struct TrajectoryCard: View {
     let points: [InsightsViewModel.TrajectoryPoint]
     let trend: SpendingTrend
@@ -161,33 +211,94 @@ private struct TrajectoryCard: View {
     }
 }
 
-/// Weekly recap with AI accuracy score (Pro). Ported from AccuracyRing / PredictionComparison.
-private struct WeeklyRecapCard: View {
+/// Weekly recap: how close last week's predictions were, in soft pastels.
+/// Ported from AccuracyRing / PredictionComparison.
+struct WeeklyRecapCard: View {
     let recap: WeeklyRecap
 
     var body: some View {
+        let difference = recap.actualTotal - recap.predictedTotal
+        let scale = max(recap.predictedTotal, recap.actualTotal, 1)
         NovaCard {
             SectionHeader(title: "Weekly recap", systemImage: "checkmark.seal.fill")
-            HStack(spacing: Spacing.lg) {
-                RingView(progress: recap.accuracy / 100, lineWidth: 10, tint: NovaColor.success) {
-                    Text("\(Int(recap.accuracy))%")
-                        .font(.novaHeadline)
-                        .foregroundStyle(NovaColor.heading)
+            HStack(spacing: Spacing.md) {
+                ZStack {
+                    Circle().fill(NovaColor.pastelGreen)
+                    RingView(progress: recap.accuracy / 100, lineWidth: 9, tint: NovaColor.success) {
+                        VStack(spacing: 0) {
+                            Text("\(Int(recap.accuracy))%").font(.novaSection).foregroundStyle(NovaColor.heading).monospacedDigit()
+                            Text("accurate").font(.novaMicro).foregroundStyle(NovaColor.body)
+                        }
+                    }
+                    .padding(8)
                 }
-                .frame(width: 84, height: 84)
+                .frame(width: 104, height: 104)
                 .accessibilityElement(children: .ignore)
-                .accessibilityLabel("Prediction accuracy \(Int(recap.accuracy)) percent")
+                .accessibilityLabel("Prediction accuracy")
+                .accessibilityValue("\(Int(recap.accuracy)) percent")
+
                 VStack(alignment: .leading, spacing: Spacing.xs) {
-                    Metric(label: "Predicted", value: recap.predictedTotal.gbpWhole)
-                    Metric(label: "Actual", value: recap.actualTotal.gbpWhole)
+                    Text(Int(recap.accuracy) >= 80 ? "Nova knew your week well" : "A less predictable week")
+                        .font(.novaHeadline).foregroundStyle(NovaColor.heading)
+                    Text(difference <= 0
+                         ? "You spent \((-difference).gbpWhole) less than predicted."
+                         : "You spent \(difference.gbpWhole) more than predicted.")
+                        .font(.novaCallout)
+                        .foregroundStyle(NovaColor.body)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
-            Text("Highlights").overline()
-            ForEach(recap.highlights, id: \.self) { line in
-                Label(line, systemImage: "circle.fill")
-                    .labelStyle(BulletLabelStyle())
+
+            VStack(spacing: Spacing.xs) {
+                comparisonBar("Predicted", recap.predictedTotal, of: scale, fill: NovaColor.pastelLilac, ink: NovaColor.chartChampion)
+                comparisonBar("Actual", recap.actualTotal, of: scale, fill: NovaColor.pastelBlue, ink: NovaColor.chartBlueberry)
+            }
+            .padding(Spacing.sm)
+            .background(NovaColor.tonal, in: RoundedRectangle(cornerRadius: Radius.control, style: .continuous))
+
+            if let top = recap.topCategory {
+                Label("Biggest spend: \(top.rawValue.lowercased())", systemImage: top.symbol)
+                    .font(.novaCaption.weight(.semibold))
+                    .foregroundStyle(top.color)
+                    .padding(.horizontal, Spacing.sm).padding(.vertical, Spacing.xxs)
+                    .background(top.color.opacity(0.14), in: Capsule())
+            }
+
+            if !recap.highlights.isEmpty {
+                Text("Highlights").overline()
+                ForEach(Array(recap.highlights.enumerated()), id: \.offset) { index, line in
+                    HStack(alignment: .top, spacing: Spacing.sm) {
+                        Image(systemName: ["sparkles", "chart.line.uptrend.xyaxis", "lightbulb.fill", "star.fill"][index % 4])
+                            .font(.callout.weight(.semibold))
+                            .foregroundStyle(NovaColor.chartChampion)
+                            .frame(width: 32, height: 32)
+                            .background(NovaColor.pastelLilac, in: RoundedRectangle(cornerRadius: Radius.control, style: .continuous))
+                            .accessibilityHidden(true)
+                        Text(line).font(.novaCallout).foregroundStyle(NovaColor.body)
+                            .fixedSize(horizontal: false, vertical: true)
+                        Spacer(minLength: 0)
+                    }
+                }
             }
         }
+    }
+
+    private func comparisonBar(_ label: String, _ value: Double, of scale: Double, fill: Color, ink: Color) -> some View {
+        HStack(spacing: Spacing.sm) {
+            Text(label).font(.novaCaption).foregroundStyle(NovaColor.body).frame(width: 70, alignment: .leading)
+            GeometryReader { proxy in
+                ZStack(alignment: .leading) {
+                    Capsule().fill(NovaColor.card)
+                    Capsule().fill(fill).frame(width: max(18, proxy.size.width * value / scale))
+                }
+            }
+            .frame(height: 18)
+            Text(value.gbpWhole).font(.novaCallout.weight(.semibold)).foregroundStyle(ink).monospacedDigit()
+                .frame(minWidth: 52, alignment: .trailing)
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(label)
+        .accessibilityValue(value.gbpWhole)
     }
 }
 

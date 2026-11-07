@@ -4,7 +4,7 @@ import SwiftUI
 /// DEBUG only: launch with `-NovaScreen <name>` to open a screen straight away
 /// (for checking layouts and taking pitch screenshots), for example `-NovaScreen family`.
 enum DebugScreen: String, CaseIterable, Identifiable {
-    case readiness, family, parent, profile, chat, graduation, report
+    case readiness, family, parent, profile, chat, graduation, report, seasons
     case insights, history, arena, simulator
 
     var id: String { rawValue }
@@ -35,8 +35,23 @@ enum DebugScreen: String, CaseIterable, Identifiable {
         case .chat: ChatView()
         case .graduation: GraduationView()
         case .report: ReadinessReportView()
+        case .seasons: InsightsCardsPreview()
         case .insights, .history, .arena, .simulator: EmptyView()
         }
+    }
+}
+
+/// Just the pastel Insights cards, for checking the design.
+private struct InsightsCardsPreview: View {
+    @Environment(AppModel.self) private var model
+    @State private var recap: WeeklyRecap?
+
+    var body: some View {
+        NovaScreen {
+            SeasonalCard(seasonal: model.summary.seasonal)
+            if let recap { WeeklyRecapCard(recap: recap) }
+        }
+        .task { recap = try? await model.services.insights.weeklyRecap(from: model.transactions) }
     }
 }
 #endif
