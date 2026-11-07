@@ -75,7 +75,8 @@ protocol InsightsServicing: AnyObject, Sendable {
 
 /// The "Ask Nova" assistant. Replaces the original Groq chat service.
 protocol ChatServicing: AnyObject, Sendable {
-    func reply(to message: String, history: [ChatMessage], summary: FinancialSummary) async throws -> String
+    /// `stage` tells the assistant whether it's talking to a teen (no credit products, short answers).
+    func reply(to message: String, history: [ChatMessage], summary: FinancialSummary, stage: LifeStage) async throws -> String
 }
 
 /// Speech in and out. Replaces ElevenLabs (text to speech) and Whisper (speech to text).

@@ -5,9 +5,10 @@ import Observation
 /// Mock "Ask Nova" assistant. Answers common money questions from the user's summary.
 /// Replace with the real LLM backend behind `ChatServicing`.
 final class MockChatService: ChatServicing {
-    func reply(to message: String, history: [ChatMessage], summary: FinancialSummary) async throws -> String {
+    func reply(to message: String, history: [ChatMessage], summary: FinancialSummary, stage: LifeStage) async throws -> String {
         await simulateLatency(900)
         let q = message.lowercased()
+        if stage == .teen { return Self.teenReply(q, summary: summary) }
         let top = summary.topCategories.first { ![.rent, .utilities, .transfer].contains($0.category) }
         let months = max(1, summary.dataRangeMonths)
 
@@ -36,6 +37,30 @@ final class MockChatService: ChatServicing {
             return "Coffee is a small daily spend that adds up. Cutting one coffee a day saves around £90 a month."
         }
         return "You spend about \(summary.avgMonthly.gbpWhole) a month and earn about \(summary.monthlyIncome.gbpWhole). \(top.map { "Your top discretionary category is \($0.category.rawValue.lowercased())." } ?? "") Ask me what you can afford, where your money goes, or how long your savings would last."
+    }
+}
+
+extension MockChatService {
+    /// Teen mode, matching the backend's teen rules: never recommends credit products,
+    /// loans or overdrafts; focuses on saving, bills, first wages and the Readiness Score; short answers.
+    static func teenReply(_ q: String, summary: FinancialSummary) -> String {
+        let creditWords = ["credit card", "overdraft", "loan", "borrow", "buy now pay later", "bnpl", "klarna", "credit"]
+        if creditWords.contains(where: q.contains) && !q.contains("credit score") && !q.contains("credit file") {
+            return "I can't recommend credit products, loans or overdrafts. A safer first step is saving a little each payday and paying bills on time, which also raises your Readiness Score. You can try a practice loan in the Simulator's borrowing sandbox."
+        }
+        if q.contains("credit score") || q.contains("credit file") || q.contains("readiness") || q.contains("score") {
+            return "Your Readiness Score is not a credit score. It shows habits lenders care about later: paying on time, staying under your weekly limit and building a buffer. Credit files usually start at 18."
+        }
+        if q.contains("wage") || q.contains("payslip") || q.contains("pay") || q.contains("job") {
+            return "You earn about \(summary.monthlyIncome.gbpWhole) a month. Try moving a set amount into savings on payday before you spend anything, even £5."
+        }
+        if q.contains("save") || q.contains("saving") {
+            return "You have \(summary.savings.gbpWhole) saved. A goal of 10% of your monthly income is a good start, and every deposit grows your streak."
+        }
+        if q.contains("bill") || q.contains("phone") {
+            return "Paying shared bills on time, whatever the amount, raises your Reliability. Set a reminder for the day before it's due."
+        }
+        return "You spend about \(summary.avgMonthly.gbpWhole) a month and earn about \(summary.monthlyIncome.gbpWhole). Ask me about saving, your wages, bills or your Readiness Score."
     }
 }
 

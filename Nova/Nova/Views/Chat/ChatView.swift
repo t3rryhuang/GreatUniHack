@@ -21,7 +21,7 @@ struct ChatView: View {
                         if viewModel.messages.count == 1 {
                             VStack(alignment: .leading, spacing: Spacing.xs) {
                                 Text("Try asking").overline()
-                                ForEach(ChatViewModel.starters, id: \.self) { starter in
+                                ForEach(model.isTeen ? ChatViewModel.teenStarters : ChatViewModel.starters, id: \.self) { starter in
                                     Button(starter) { Task { await viewModel.send(model: model, text: starter) } }
                                         .buttonStyle(NovaChipStyle())
                                 }
