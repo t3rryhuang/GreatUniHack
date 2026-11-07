@@ -585,3 +585,22 @@ extension ReadinessRules {
         return streak
     }
 }
+
+// MARK: Hardship protection (F8)
+
+extension ReadinessRules {
+    /// Income in the last complete calendar month compared with the month before.
+    /// Returns that ratio when income fell by more than 30%, otherwise 1.
+    static func hardshipScale(_ transactions: [Transaction], now: Date = .now, calendar: Calendar = .current) -> Double {
+        guard let thisMonth = calendar.dateInterval(of: .month, for: now)?.start,
+              let lastMonth = calendar.date(byAdding: .month, value: -1, to: thisMonth),
+              let monthBefore = calendar.date(byAdding: .month, value: -2, to: thisMonth) else { return 1 }
+        func income(_ from: Date, _ to: Date) -> Double {
+            transactions.filter { $0.category == .income && $0.amount > 0 && $0.date >= from && $0.date < to }.reduce(0) { $0 + $1.amount }
+        }
+        let recent = income(lastMonth, thisMonth)
+        let before = income(monthBefore, lastMonth)
+        guard before > 0, recent < before * 0.7 else { return 1 }
+        return max(0.3, recent / before)
+    }
+}

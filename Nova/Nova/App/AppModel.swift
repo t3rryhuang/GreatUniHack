@@ -229,11 +229,18 @@ final class AppModel {
             transactions: transactions,
             summary: summary,
             savingsBalance: savingsAccount?.balance ?? 0,
-            familyPayments: isTeen ? family.scheduledPayments() : [],
+            familyPayments: isTeen ? family.scheduledPayments() + promisePayments() : [],
             accountStart: min(user?.memberSince ?? .now, earliest)
         )
         readiness = await services.readiness.evaluate(input)
         readinessProgress = await services.readiness.progress()
+    }
+
+    /// Weekly "promise to myself" transfers, scored like bills.
+    private func promisePayments(now: Date = .now) -> [ScheduledPayment] {
+        (piggy?.promise?.cycles(now: now) ?? []).map {
+            ScheduledPayment(name: "Promise to myself", amount: $0.amount, due: $0.due, paid: $0.paid)
+        }
     }
 
     /// Counts a what-if, lesson or sandbox run towards Wisdom.
@@ -297,6 +304,70 @@ final class AppModel {
         family = await services.family.state()
         try await addTransaction(Transaction(date: .now, description: "Transfer to \(bill.partnerName) - \(bill.name.lowercased())",
                                              amount: -payment.amount, category: .transfer))
+    }
+
+    // MARK: Piggy Bank
+
+    var piggy: PiggyBank? { savingsAccount?.piggy }
+
+    /// 1 normally. During hardship (income down more than 30% month on month),
+    /// the ratio of this month's income to last month's, used to ease goals and limits.
+    var hardshipScale: Double { ReadinessRules.hardshipScale(transactions) }
+
+    func setPiggyGoal(name: String, amount: Double, targetDate: Date?) async {
+        var piggy = self.piggy ?? PiggyBank(goalName: name, goalAmount: amount)
+        piggy.goalName = name.trimmingCharacters(in: .whitespaces)
+        piggy.goalAmount = max(1, amount)
+        piggy.targetDate = targetDate
+        if piggy.saved < piggy.goalAmount { piggy.goalReachedAt = nil }
+        savingsAccount = await services.savings.updatePiggy(piggy)
+    }
+
+    /// Moves money (from £1) into the Piggy Bank with `SavingsServicing.topUp`.
+    /// Reaching the goal pays the example matched-savings bonus once, if rewards are on.
+    @discardableResult
+    func addToPiggy(_ amount: Double, isPromise: Bool = false, rewardsOn: Bool = true) async throws -> Double {
+        guard amount >= 1, var piggy else { throw ServiceError.invalidAmount }
+        _ = try await services.savings.topUp(amount)
+        piggy.saved += amount
+        piggy.deposits.append(PiggyDeposit(date: .now, amount: amount, isPromise: isPromise))
+        var bonus = 0.0
+        if piggy.goalReachedAt == nil, piggy.saved >= piggy.goalAmount {
+            piggy.goalReachedAt = .now
+            if rewardsOn {
+                bonus = PiggyRules.matchBonus(saved: piggy.saved)
+                if bonus > 0 {
+                    _ = try await services.savings.depositPayout(bonus, reference: "MATCHED BONUS (EXAMPLE)")
+                    piggy.bonusPaid = bonus
+                }
+            }
+        }
+        savingsAccount = await services.savings.updatePiggy(piggy)
+        try await addTransaction(Transaction(date: .now, description: isPromise ? "Transfer to Piggy Bank - promise to myself" : "Transfer to Piggy Bank",
+                                             amount: -amount, category: .transfer))
+        await refreshSavings()
+        return bonus
+    }
+
+    func setPromise(amount: Double?, weekday: Int) async {
+        guard var piggy else { return }
+        if let amount, amount >= 1 {
+            piggy.promise = PromiseToMyself(amount: amount, weekday: weekday, startDate: .now, payments: piggy.promise?.payments ?? [])
+        } else {
+            piggy.promise = nil
+        }
+        savingsAccount = await services.savings.updatePiggy(piggy)
+        await refreshReadiness()
+    }
+
+    /// Makes this week's promised transfer. On time counts towards Reliability like a bill.
+    func keepPromise(rewardsOn: Bool = true) async throws {
+        guard let promise = piggy?.promise, let due = promise.nextDue() else { throw ServiceError.nothingDue }
+        try await addToPiggy(promise.amount, isPromise: true, rewardsOn: rewardsOn)
+        guard var piggy else { return }
+        piggy.promise?.payments.append(FamilyPayment(due: due.due, amount: promise.amount, paid: .now))
+        savingsAccount = await services.savings.updatePiggy(piggy)
+        await refreshReadiness()
     }
 
     // MARK: Money Quest

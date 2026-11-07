@@ -35,6 +35,8 @@ struct SavingsAccount: Codable, Hashable, Sendable {
     var balance: Double
     var interestRate: Double
     var activity: [SavingsActivity]
+    /// Teen-mode Piggy Bank pot. Optional, so accounts saved by older builds still load.
+    var piggy: PiggyBank?
 
     var maskedNumber: String { "•••• " + accountNumber.suffix(4) }
 }

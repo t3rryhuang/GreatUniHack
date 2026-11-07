@@ -78,9 +78,16 @@ final class MockSavingsService: SavingsServicing {
                 interestRate: 1.25,
                 activity: [
                     SavingsActivity(date: .now.addingTimeInterval(-86_400 * 9), title: "Transfer from current account", amount: 40, reference: "PAYDAY SAVE")
-                ]
+                ],
+                piggy: MockDataFactory.teenPiggy()
             )
         }
+    }
+
+    func updatePiggy(_ piggy: PiggyBank?) async -> SavingsAccount {
+        state.piggy = piggy
+        persist()
+        return state
     }
 
     func resetDemo(stage: LifeStage) async -> SavingsAccount {

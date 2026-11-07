@@ -116,6 +116,8 @@ protocol SavingsServicing: AnyObject, Sendable {
     func withdrawStake(_ amount: Double, reference: String) async throws -> SavingsAccount
     func depositPayout(_ amount: Double, reference: String) async throws -> SavingsAccount
     func topUp(_ amount: Double) async throws -> SavingsAccount
+    /// Saves the Piggy Bank goal, deposits and promise (money moves with `topUp`).
+    func updatePiggy(_ piggy: PiggyBank?) async -> SavingsAccount
     /// Demo only: resets the account to a balance that fits the life stage.
     func resetDemo(stage: LifeStage) async -> SavingsAccount
 }

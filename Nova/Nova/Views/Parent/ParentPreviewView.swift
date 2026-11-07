@@ -65,6 +65,23 @@ struct ParentPreviewView: View {
                 }
             }
 
+            if let piggy = model.piggy {
+                NovaCard {
+                    SectionHeader(title: "Piggy Bank goal", systemImage: "sterlingsign.circle.fill")
+                    let progress = PiggyRules.progress(piggy, scale: model.hardshipScale)
+                    HStack {
+                        Text(piggy.goalName).font(.novaHeadline).foregroundStyle(NovaColor.heading)
+                        Spacer()
+                        Text(UserDefaults.standard.bool(forKey: "nova.piggy.shareWithParent")
+                             ? "\(piggy.saved.gbp) · \(progress.percent)" : "\(progress.percent) of goal")
+                            .font(.novaCallout).foregroundStyle(NovaColor.body)
+                    }
+                    ProbabilityBar(value: progress, tint: NovaColor.chartWatermelon)
+                    Text("Shown as a % unless \(first) chooses to share the amount.").font(.novaCaption).foregroundStyle(NovaColor.muted)
+                }
+                .accessibilityElement(children: .combine)
+            }
+
             NovaCard {
                 SectionHeader(title: "Safety alerts", systemImage: "bell.badge.fill")
                 let alerts = viewModel.alerts(model: model)

@@ -206,6 +206,21 @@ enum MockDataFactory {
         )
     }
 
+    /// Jamie's Piggy Bank: saving for a festival ticket, with a weekly promise to himself.
+    static func teenPiggy(now: Date = .now) -> PiggyBank {
+        let calendar = Calendar(identifier: .gregorian)
+        let start = calendar.date(byAdding: .day, value: -70, to: calendar.startOfDay(for: now)) ?? now
+        var promise = PromiseToMyself(amount: 5, weekday: 6, startDate: start)
+        var deposits: [PiggyDeposit] = []
+        for cycle in promise.cycles(now: now) where cycle.due < calendar.startOfDay(for: now) {
+            promise.payments.append(FamilyPayment(due: cycle.due, amount: 5, paid: cycle.due))
+            deposits.append(PiggyDeposit(date: cycle.due, amount: 5, isPromise: true))
+        }
+        let saved = deposits.reduce(0) { $0 + $1.amount }
+        return PiggyBank(goalName: "Festival ticket", goalAmount: 120, targetDate: calendar.date(byAdding: .month, value: 4, to: now),
+                         saved: saved, deposits: deposits, promise: promise)
+    }
+
     static let teenHabits: [(SpendingCategory, [String], ClosedRange<Double>, Double)] = [
         (.dining, ["Greggs", "Subway", "Nando's", "McDonald's", "Chicken Cottage"], 3...11, 3.2),
         (.transport, ["Bee Network Bus", "Metrolink"], 1...2.8, 4.5),
