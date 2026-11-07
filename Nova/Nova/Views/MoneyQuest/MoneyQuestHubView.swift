@@ -3,6 +3,7 @@ import SwiftUI
 /// Money Quest game hub: the character, today's points (with the daily cap) and a chapter map.
 struct MoneyQuestHubView: View {
     @Environment(AppModel.self) private var model
+    @State private var showExplorer = false
     private let content = MoneyQuestContent.shared
 
     var body: some View {
@@ -30,6 +31,9 @@ struct MoneyQuestHubView: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
 
+            Button { showExplorer = true } label: { ExplorerEntryCard() }
+                .buttonStyle(.plain)
+
             NavigationLink { LeagueView() } label: {
                 RowLink(title: "Leagues", subtitle: "Friends and school, ranked by points and improvement", symbol: "person.3.fill")
             }
@@ -50,6 +54,7 @@ struct MoneyQuestHubView: View {
                 }
             }
         }
+        .fullScreenCover(isPresented: $showExplorer) { ExplorerView() }
         .navigationTitle("Money Quest")
         .navigationBarTitleDisplayMode(.inline)
     }
@@ -157,5 +162,34 @@ struct QuestChapterView: View {
         }
         .navigationTitle("Chapter \(chapter.id)")
         .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+/// Entry to Nova Explorer, the 3D version of Money Quest (Teen mode only).
+struct ExplorerEntryCard: View {
+    var body: some View {
+        HStack(spacing: Spacing.md) {
+            Image(systemName: "cube.transparent.fill")
+                .font(.title)
+                .foregroundStyle(.white)
+                .frame(width: 60, height: 60)
+                .background(LinearGradient(colors: [NovaColor.regal, NovaColor.action], startPoint: .topLeading, endPoint: .bottomTrailing),
+                            in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Nova Explorer: Manchester").font(.novaHeadline).foregroundStyle(NovaColor.heading)
+                Text("Play Money Quest in 3D. Explore the city, meet Remi the stylist and build the Community Park.")
+                    .font(.novaCallout).foregroundStyle(NovaColor.body)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: 0)
+            Image(systemName: "play.circle.fill").font(.title).foregroundStyle(NovaColor.action).accessibilityHidden(true)
+        }
+        .padding(Spacing.md)
+        .background(NovaColor.card, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: Radius.card, style: .continuous).strokeBorder(NovaColor.action, lineWidth: 2))
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(.isButton)
+        .accessibilityHint("Opens the 3D game. The chapter list below has the same quests without 3D.")
     }
 }

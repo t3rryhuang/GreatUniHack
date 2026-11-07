@@ -93,6 +93,7 @@ struct MainTabView: View {
     @Environment(AppModel.self) private var model
     #if DEBUG
     @State private var debugScreen: DebugScreen?
+    @State private var debugExplorer = false
     #endif
 
     var body: some View {
@@ -119,9 +120,10 @@ struct MainTabView: View {
             UserDefaults.standard.set(true, forKey: "nova.arenaIntroSeen")
             if let index = requested.tab { tab = index } else {
                 try? await Task.sleep(for: .milliseconds(600))
-                debugScreen = requested
+                if requested == .explorer { debugExplorer = true } else { debugScreen = requested }
             }
         }
+        .fullScreenCover(isPresented: $debugExplorer) { ExplorerView() }
         .sheet(item: $debugScreen) { screen in
             if screen == .chat { screen.destination } else { NavigationStack { screen.destination } }
         }

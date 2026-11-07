@@ -4,6 +4,7 @@ import SwiftUI
 struct HomeView: View {
     @Environment(AppModel.self) private var model
     @State private var viewModel = HomeViewModel()
+    @State private var showExplorer = false
 
     var body: some View {
         NavigationStack {
@@ -28,6 +29,8 @@ struct HomeView: View {
                         }
                     }
                     if model.isTeen {
+                        Button { showExplorer = true } label: { ExplorerEntryCard() }
+                            .buttonStyle(.plain)
                         NavigationLink { MoneyQuestHubView() } label: {
                             RowLink(title: "Money Quest", subtitle: "\(model.game.pointsToday()) of \(MoneyQuestConfig.dailyPointsCap) points today · play a 2-minute level", symbol: "gamecontroller.fill")
                         }
@@ -65,6 +68,7 @@ struct HomeView: View {
                     .accessibilityLabel("Add transaction")
                 }
             }
+            .fullScreenCover(isPresented: $showExplorer) { ExplorerView() }
             .refreshable { await viewModel.load(model: model, force: true) }
             .task(id: model.dataVersion) { await viewModel.load(model: model) }
         }

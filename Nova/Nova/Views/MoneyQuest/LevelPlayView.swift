@@ -7,9 +7,12 @@ struct LevelPlayView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var viewModel: LevelPlayViewModel
+    /// Called once when the level is finished (Nova Explorer uses it to give XP).
+    private let onFinish: (() -> Void)?
 
-    init(level: QuestLevel, chapter: QuestChapter) {
+    init(level: QuestLevel, chapter: QuestChapter, onFinish: (() -> Void)? = nil) {
         _viewModel = State(initialValue: LevelPlayViewModel(level: level, chapter: chapter))
+        self.onFinish = onFinish
     }
 
     var body: some View {
@@ -109,7 +112,10 @@ struct LevelPlayView: View {
                 Spacer(minLength: 0)
             }
             Button(viewModel.stepIndex + 1 < viewModel.level.steps.count ? "Next" : "Finish level") {
-                Task { await viewModel.next(model: model) }
+                Task {
+                    await viewModel.next(model: model)
+                    if viewModel.isFinished { onFinish?() }
+                }
             }
             .buttonStyle(.novaPrimary)
         }
