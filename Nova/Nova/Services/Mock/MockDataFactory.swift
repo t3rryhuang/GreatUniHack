@@ -129,6 +129,120 @@ enum MockDataFactory {
         }
     }
 
+    // MARK: Teen demo (Jamie, 17, Manchester)
+
+    static let teenName = "Jamie Patel"
+    static let teenEmail = "jamie.patel@example.com"
+
+    /// 17 years and 7 months old, so the 18th birthday is about 5 months away.
+    static func teenDateOfBirth(now: Date = .now) -> Date {
+        let calendar = Calendar(identifier: .gregorian)
+        let birthday = calendar.date(byAdding: DateComponents(year: -17, month: -7), to: calendar.startOfDay(for: now)) ?? now
+        return birthday
+    }
+
+    /// One family payment that is due on a date and may have been paid.
+    struct DemoPayment {
+        let due: Date
+        let paid: Date?
+        let amount: Double
+    }
+
+    /// The £10 phone bill share Jamie pays Mum on the 12th. One payment was 5 days late.
+    static func teenPhoneShare(now: Date = .now) -> [DemoPayment] {
+        let calendar = Calendar(identifier: .gregorian)
+        let today = calendar.startOfDay(for: now)
+        var result: [DemoPayment] = []
+        for monthsAgo in (0...5).reversed() {
+            guard let month = calendar.date(byAdding: .month, value: -monthsAgo, to: today),
+                  let due = calendar.date(bySetting: .day, value: 12, of: calendar.dateInterval(of: .month, for: month)?.start ?? month),
+                  due <= today else { continue }
+            let late = monthsAgo == 3
+            let paid = calendar.date(byAdding: .day, value: late ? 5 : 0, to: due)
+            result.append(DemoPayment(due: due, paid: paid, amount: 10))
+        }
+        return result
+    }
+
+    /// £120 from Mum for driving lessons, repaid at £30 a month. Two of four paid so far.
+    static func teenLoanSchedule(now: Date = .now) -> (approved: Date, payments: [DemoPayment]) {
+        let calendar = Calendar(identifier: .gregorian)
+        let today = calendar.startOfDay(for: now)
+        let approved = calendar.date(byAdding: .day, value: -75, to: today) ?? today
+        let payments = (1...4).compactMap { index -> DemoPayment? in
+            guard let due = calendar.date(byAdding: .month, value: index, to: approved) else { return nil }
+            let paid: Date? = due <= today ? calendar.date(byAdding: .day, value: -1, to: due) : nil
+            return DemoPayment(due: due, paid: paid, amount: 30)
+        }
+        return (approved, payments)
+    }
+
+    static let teenHabits: [(SpendingCategory, [String], ClosedRange<Double>, Double)] = [
+        (.dining, ["Greggs", "Subway", "Nando's", "McDonald's", "Chicken Cottage"], 3...11, 3.2),
+        (.transport, ["Bee Network Bus", "Metrolink"], 1...2.8, 4.5),
+        (.coffee, ["Costa Coffee", "Starbucks"], 2.6...4.4, 1.0),
+        (.entertainment, ["Vue Cinema", "Steam", "Odeon Cinema", "Hollywood Bowl"], 5...16, 0.6),
+        (.shopping, ["Primark", "JD Sports", "Amazon", "H&M"], 6...35, 0.5),
+        (.groceries, ["Tesco Express", "Co-op"], 2...9, 1.0)
+    ]
+
+    /// Six months for a 17-year-old with a part-time job: about £400 a month in wages,
+    /// small everyday spending, the phone bill share and repayments to Mum.
+    static func teenTransactions(months: Int = 6, now: Date = .now, seed: UInt64 = 1717) -> [Transaction] {
+        var rng = SeededGenerator(seed: seed)
+        let calendar = Calendar(identifier: .gregorian)
+        let today = calendar.startOfDay(for: now)
+        guard let start = calendar.date(byAdding: .month, value: -months, to: today) else { return [] }
+
+        var result: [Transaction] = []
+        var day = start
+        var weekIndex = 0
+        while day <= today {
+            let weekday = calendar.component(.weekday, from: day)
+            let dayOfMonth = calendar.component(.day, from: day)
+            let isWeekend = weekday == 1 || weekday == 7
+            // Paid every other Friday for weekend and after-school shifts.
+            if weekday == 6 {
+                weekIndex += 1
+                if weekIndex % 2 == 0 {
+                    let wage = (Double.random(in: 176...214, using: &rng) * 100).rounded() / 100
+                    result.append(Transaction(date: at(day, hour: 9, calendar), description: "Wages - Cafe job payroll", amount: wage, category: .income))
+                }
+            }
+            if dayOfMonth == 1 {
+                result.append(Transaction(date: at(day, hour: 8, calendar), description: "Transfer to Flexible Saver", amount: -40, category: .transfer))
+            }
+            for (category, names, range, perWeek) in teenHabits {
+                var chance = perWeek / 7
+                if isWeekend && (category == .entertainment || category == .shopping) { chance *= 1.8 }
+                if !isWeekend && category == .transport { chance *= 1.2 }
+                if Double.random(in: 0...1, using: &rng) < min(chance, 1) {
+                    let name = names[Int.random(in: 0..<names.count, using: &rng)]
+                    let amount = (Double.random(in: range, using: &rng) * 100).rounded() / 100
+                    result.append(Transaction(date: at(day, hour: hourFor(category, rng: &rng), calendar), description: name, amount: -amount, category: category))
+                }
+            }
+            guard let next = calendar.date(byAdding: .day, value: 1, to: day) else { break }
+            day = next
+        }
+
+        // Family payments, matching the Family screen.
+        for payment in teenPhoneShare(now: now) {
+            if let paid = payment.paid, paid >= start {
+                result.append(Transaction(date: at(paid, hour: 18, calendar), description: "Transfer to Mum - phone bill share", amount: -payment.amount, category: .transfer))
+            }
+        }
+        let loan = teenLoanSchedule(now: now)
+        result.append(Transaction(date: at(loan.approved, hour: 19, calendar), description: "Transfer from Mum - driving lessons loan", amount: 120, category: .transfer))
+        result.append(Transaction(date: at(loan.approved, hour: 20, calendar), description: "Driving lessons", amount: -120, category: .education))
+        for payment in loan.payments {
+            if let paid = payment.paid {
+                result.append(Transaction(date: at(paid, hour: 18, calendar), description: "Transfer to Mum - loan repayment", amount: -payment.amount, category: .transfer))
+            }
+        }
+        return result.sorted { $0.date > $1.date }
+    }
+
     // MARK: Arenas
 
     static let friendNames = ["Priya Shah", "Tom Okafor", "Ellie Clarke", "Sam Hughes", "Aisha Rahman", "Jack Murphy"]

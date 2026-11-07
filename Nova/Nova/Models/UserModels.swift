@@ -6,6 +6,8 @@ struct UserProfile: Codable, Hashable, Sendable {
     var email: String
     var bank: Bank = .natwest
     var memberSince: Date = .now
+    /// Optional, so profiles saved by older builds still load. Drives `stage`.
+    var dateOfBirth: Date?
 
     var firstName: String { name.split(separator: " ").first.map(String.init) ?? name }
 }

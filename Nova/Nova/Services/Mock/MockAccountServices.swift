@@ -40,6 +40,11 @@ final class MockAuthService: AuthServicing {
         currentUser?.bank = bank
         if let currentUser { LocalStore.save(currentUser, to: storeName) }
     }
+
+    func updateDateOfBirth(_ date: Date?) async {
+        currentUser?.dateOfBirth = date
+        if let currentUser { LocalStore.save(currentUser, to: storeName) }
+    }
 }
 
 /// Mock NatWest savings account that holds arena stakes and receives prize pots.
@@ -48,16 +53,40 @@ final class MockSavingsService: SavingsServicing {
     private var state: SavingsAccount
 
     init() {
-        state = LocalStore.load(SavingsAccount.self, from: storeName) ?? SavingsAccount(
-            name: "Flexible Saver",
-            sortCode: "60-00-01",
-            accountNumber: "48213907",
-            balance: 6_420,
-            interestRate: 1.25,
-            activity: [
-                SavingsActivity(date: .now.addingTimeInterval(-86_400 * 12), title: "Transfer from current account", amount: 250, reference: "MONTHLY SAVE")
-            ]
-        )
+        state = LocalStore.load(SavingsAccount.self, from: storeName) ?? Self.demoAccount(stage: .adult)
+    }
+
+    static func demoAccount(stage: LifeStage) -> SavingsAccount {
+        switch stage {
+        case .adult:
+            SavingsAccount(
+                name: "Flexible Saver",
+                sortCode: "60-00-01",
+                accountNumber: "48213907",
+                balance: 6_420,
+                interestRate: 1.25,
+                activity: [
+                    SavingsActivity(date: .now.addingTimeInterval(-86_400 * 12), title: "Transfer from current account", amount: 250, reference: "MONTHLY SAVE")
+                ]
+            )
+        case .teen:
+            SavingsAccount(
+                name: "Flexible Saver",
+                sortCode: "60-00-01",
+                accountNumber: "51830264",
+                balance: 265,
+                interestRate: 1.25,
+                activity: [
+                    SavingsActivity(date: .now.addingTimeInterval(-86_400 * 9), title: "Transfer from current account", amount: 40, reference: "PAYDAY SAVE")
+                ]
+            )
+        }
+    }
+
+    func resetDemo(stage: LifeStage) async -> SavingsAccount {
+        state = Self.demoAccount(stage: stage)
+        persist()
+        return state
     }
 
     func account() async throws -> SavingsAccount {

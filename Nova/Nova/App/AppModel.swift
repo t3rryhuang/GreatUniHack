@@ -32,6 +32,17 @@ final class AppModel {
     var isPro: Bool { Self.allFeaturesUnlocked || plan == .pro }
     var hasData: Bool { !transactions.isEmpty }
 
+    // MARK: Life stage
+
+    private static let demoStageKey = "nova.demoStage"
+
+    /// Demo override from Profile > Demo, so the stage can change without editing the birth date.
+    private(set) var demoStageOverride: LifeStage? = UserDefaults.standard.string(forKey: AppModel.demoStageKey).flatMap(LifeStage.init(rawValue:))
+
+    /// Teen (16-17) or adult. The demo override wins over the date of birth.
+    var stage: LifeStage { demoStageOverride ?? user?.stage ?? .adult }
+    var isTeen: Bool { stage == .teen }
+
     init(services: ServiceContainer) {
         self.services = services
     }
@@ -39,11 +50,21 @@ final class AppModel {
     func start() async {
         plan = services.subscription.plan
         #if DEBUG
-        // Launch with `-NovaDemo` to skip sign-in and onboarding (handy for demos and screenshots).
-        if ProcessInfo.processInfo.arguments.contains("-NovaDemo"), services.auth.currentUser == nil {
-            if (try? await services.auth.signIn(email: "alex.taylor@example.com", password: "demo1234")) != nil {
-                _ = try? await services.transactions.loadDemoData()
+        let arguments = ProcessInfo.processInfo.arguments
+        // Launch with `-NovaTeenDemo` to start as Jamie, 17, in Teen mode.
+        if arguments.contains("-NovaTeenDemo"), services.auth.currentUser?.email != MockDataFactory.teenEmail {
+            if (try? await services.auth.signIn(email: MockDataFactory.teenEmail, password: "demo1234")) != nil {
                 await services.auth.updateBank(.natwest)
+                await services.auth.updateDateOfBirth(MockDataFactory.teenDateOfBirth())
+                user = services.auth.currentUser
+                await resetDemo(for: .teen)
+            }
+        // Launch with `-NovaDemo` to skip sign-in and onboarding (handy for demos and screenshots).
+        } else if arguments.contains("-NovaDemo"), services.auth.currentUser == nil {
+            if (try? await services.auth.signIn(email: "alex.taylor@example.com", password: "demo1234")) != nil {
+                await services.auth.updateBank(.natwest)
+                user = services.auth.currentUser
+                await resetDemo(for: .adult)
             }
         }
         #endif
@@ -74,6 +95,8 @@ final class AppModel {
         services.voice.stopSpeaking()
         await services.auth.signOut()
         user = nil
+        demoStageOverride = nil
+        UserDefaults.standard.removeObject(forKey: Self.demoStageKey)
         transactions = []
         summary = .empty
         phase = .signedOut
@@ -99,7 +122,7 @@ final class AppModel {
     }
 
     func loadDemoData() async throws {
-        apply(try await services.transactions.loadDemoData())
+        apply(try await services.transactions.loadDemoData(stage: stage))
     }
 
     func importStatement(_ data: Data, type: ImportFileType) async throws {
@@ -127,6 +150,27 @@ final class AppModel {
             savingsAccount = account
             summary = FinancialSummary.make(from: transactions, savingsBalance: account.balance)
         }
+    }
+
+    // MARK: Demo
+
+    /// Profile > Demo switch: changes the stage and loads matching demo data.
+    func switchDemoStage(to newStage: LifeStage) async {
+        guard newStage != stage else { return }
+        await resetDemo(for: newStage)
+        await reloadData()
+    }
+
+    /// Sets the stage override and reloads every demo data set for that stage.
+    private func resetDemo(for newStage: LifeStage) async {
+        demoStageOverride = newStage == user?.stage ? nil : newStage
+        if let demoStageOverride {
+            UserDefaults.standard.set(demoStageOverride.rawValue, forKey: Self.demoStageKey)
+        } else {
+            UserDefaults.standard.removeObject(forKey: Self.demoStageKey)
+        }
+        savingsAccount = await services.savings.resetDemo(stage: newStage)
+        _ = try? await services.transactions.loadDemoData(stage: newStage)
     }
 
     // MARK: Plan

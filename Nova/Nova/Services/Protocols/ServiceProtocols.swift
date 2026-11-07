@@ -37,17 +37,23 @@ protocol AuthServicing: AnyObject, Sendable {
     func signUp(name: String, email: String, password: String) async throws -> UserProfile
     func signOut() async
     func updateBank(_ bank: Bank) async
+    func updateDateOfBirth(_ date: Date?) async
 }
 
 /// The user's transactions. Replaces the original backend upload endpoints
 /// (`/parse-pdf`) and the local transaction store.
 protocol TransactionServicing: AnyObject, Sendable {
     func fetchTransactions() async throws -> [Transaction]
-    func loadDemoData() async throws -> [Transaction]
+    /// Replaces the stored transactions with demo data for a life stage (manual entries are kept).
+    func loadDemoData(stage: LifeStage) async throws -> [Transaction]
     func importStatement(_ data: Data, type: ImportFileType) async throws -> [Transaction]
     func add(_ transaction: Transaction) async throws
     func delete(id: UUID) async throws
     func clearAll() async throws
+}
+
+extension TransactionServicing {
+    func loadDemoData() async throws -> [Transaction] { try await loadDemoData(stage: .adult) }
 }
 
 /// Predictions and insights. Maps to the original `/week-ahead`, `/income-runway`,
@@ -99,6 +105,8 @@ protocol SavingsServicing: AnyObject, Sendable {
     func withdrawStake(_ amount: Double, reference: String) async throws -> SavingsAccount
     func depositPayout(_ amount: Double, reference: String) async throws -> SavingsAccount
     func topUp(_ amount: Double) async throws -> SavingsAccount
+    /// Demo only: resets the account to a balance that fits the life stage.
+    func resetDemo(stage: LifeStage) async -> SavingsAccount
 }
 
 /// Free / Pro plan. Replaces Stripe.

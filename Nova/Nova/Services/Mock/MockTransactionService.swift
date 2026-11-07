@@ -15,10 +15,11 @@ final class MockTransactionService: TransactionServicing {
         return transactions.sorted { $0.date > $1.date }
     }
 
-    func loadDemoData() async throws -> [Transaction] {
+    func loadDemoData(stage: LifeStage) async throws -> [Transaction] {
         await simulateLatency(900)
         let manual = transactions.filter(\.isManual)
-        transactions = (MockDataFactory.demoTransactions() + manual).sorted { $0.date > $1.date }
+        let demo = stage == .teen ? MockDataFactory.teenTransactions() : MockDataFactory.demoTransactions()
+        transactions = (demo + manual).sorted { $0.date > $1.date }
         persist()
         return transactions
     }

@@ -10,6 +10,7 @@ struct ProfileView: View {
     @State private var showSavings = false
     @State private var showUpgrade = false
     @State private var showAddTransaction = false
+    @State private var isSwitchingStage = false
 
     var body: some View {
         List {
@@ -20,6 +21,13 @@ struct ProfileView: View {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(user.name).font(.novaSection).foregroundStyle(NovaColor.heading)
                             Text(user.email).font(.novaCallout).foregroundStyle(NovaColor.body)
+                            if model.isTeen {
+                                Text("Teen mode")
+                                    .font(.novaCaption.weight(.semibold))
+                                    .foregroundStyle(NovaColor.action)
+                                    .padding(.horizontal, Spacing.xs).padding(.vertical, 2)
+                                    .background(NovaColor.lilac, in: Capsule())
+                            }
                         }
                     }
                     .padding(.vertical, Spacing.xxs)
@@ -81,6 +89,34 @@ struct ProfileView: View {
                 Text("Your data")
             } footer: {
                 Text("Supports PDF, JSON and CSV statements.")
+            }
+
+            Section {
+                Picker("Mode", selection: Binding(
+                    get: { model.stage },
+                    set: { newStage in
+                        Task {
+                            isSwitchingStage = true
+                            await model.switchDemoStage(to: newStage)
+                            isSwitchingStage = false
+                        }
+                    }
+                )) {
+                    ForEach(LifeStage.allCases) { Text($0.title).tag($0) }
+                }
+                .pickerStyle(.segmented)
+                .disabled(isSwitchingStage)
+                .accessibilityLabel("Demo mode")
+                if isSwitchingStage {
+                    HStack(spacing: Spacing.xs) {
+                        ProgressView()
+                        Text("Loading \(model.stage.title.lowercased()) demo data…").font(.novaCallout).foregroundStyle(NovaColor.body)
+                    }
+                }
+            } header: {
+                Text("Demo")
+            } footer: {
+                Text("Teen mode is for 16 and 17-year-olds. Switching loads matching demo data.")
             }
 
             Section {
