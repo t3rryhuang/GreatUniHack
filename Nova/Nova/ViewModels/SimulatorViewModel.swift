@@ -38,6 +38,7 @@ final class SimulatorViewModel {
             expanded.insert(result.id)
             question = ""
             if !model.isPro { questionsUsed += 1 }
+            await model.recordWisdom(.whatIf)
         } catch {
             model.errorMessage = error.localizedDescription
         }

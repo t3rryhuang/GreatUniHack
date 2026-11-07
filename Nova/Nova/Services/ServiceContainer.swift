@@ -11,6 +11,7 @@ struct ServiceContainer {
     let arenas: ArenaServicing
     let savings: SavingsServicing
     let subscription: SubscriptionServicing
+    let readiness: ReadinessServicing
 
     static func mock() -> ServiceContainer {
         let auth = MockAuthService()
@@ -23,12 +24,13 @@ struct ServiceContainer {
             voice: SystemVoiceService(),
             arenas: MockArenaService(savings: savings, auth: auth),
             savings: savings,
-            subscription: MockSubscriptionService()
+            subscription: MockSubscriptionService(),
+            readiness: LocalReadinessService()
         )
     }
 
     /// Arenas, insights, chat and read-aloud go to the backend. Sign-in, transactions,
-    /// the savings account and the Pro plan stay on-device.
+    /// the savings account, the Pro plan and the Readiness Score stay on-device.
     static func live(baseURL: URL) -> ServiceContainer {
         let client = BackendClient(baseURL: baseURL)
         let auth = MockAuthService()
@@ -41,7 +43,8 @@ struct ServiceContainer {
             voice: ElevenLabsVoiceService(client: client),
             arenas: RemoteArenaService(client: client, savings: savings, auth: auth),
             savings: savings,
-            subscription: MockSubscriptionService()
+            subscription: MockSubscriptionService(),
+            readiness: LocalReadinessService()
         )
     }
 }

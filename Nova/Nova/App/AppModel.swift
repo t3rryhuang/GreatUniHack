@@ -17,6 +17,9 @@ final class AppModel {
     private(set) var plan: Plan = .free
     private(set) var savingsAccount: SavingsAccount?
     private(set) var dataVersion = 0
+    /// The latest Readiness Score and the data behind it.
+    private(set) var readiness: ReadinessSnapshot?
+    private(set) var readinessProgress = ReadinessProgress()
     var errorMessage: String?
 
     /// Presentation state for app-wide sheets.
@@ -113,6 +116,7 @@ final class AppModel {
         } catch {
             errorMessage = error.localizedDescription
         }
+        await refreshReadiness()
     }
 
     func apply(_ newTransactions: [Transaction]) {
@@ -123,20 +127,24 @@ final class AppModel {
 
     func loadDemoData() async throws {
         apply(try await services.transactions.loadDemoData(stage: stage))
+        await refreshReadiness()
     }
 
     func importStatement(_ data: Data, type: ImportFileType) async throws {
         apply(try await services.transactions.importStatement(data, type: type))
+        await refreshReadiness()
     }
 
     func addTransaction(_ transaction: Transaction) async throws {
         try await services.transactions.add(transaction)
         apply(try await services.transactions.fetchTransactions())
+        await refreshReadiness()
     }
 
     func deleteTransaction(_ id: UUID) async {
         try? await services.transactions.delete(id: id)
         apply(transactions.filter { $0.id != id })
+        await refreshReadiness()
     }
 
     func clearAllData() async {
@@ -149,7 +157,39 @@ final class AppModel {
         if let account = try? await services.savings.account() {
             savingsAccount = account
             summary = FinancialSummary.make(from: transactions, savingsBalance: account.balance)
+            await refreshReadiness()
         }
+    }
+
+    // MARK: Readiness
+
+    /// Recomputes the Readiness Score from the current data.
+    func refreshReadiness() async {
+        guard hasData else {
+            readiness = nil
+            return
+        }
+        let earliest = transactions.map(\.date).min() ?? .now
+        let input = ReadinessInput(
+            transactions: transactions,
+            summary: summary,
+            savingsBalance: savingsAccount?.balance ?? 0,
+            familyPayments: [],
+            accountStart: min(user?.memberSince ?? .now, earliest)
+        )
+        readiness = await services.readiness.evaluate(input)
+        readinessProgress = await services.readiness.progress()
+    }
+
+    /// Counts a what-if, lesson or sandbox run towards Wisdom.
+    func recordWisdom(_ event: WisdomEvent) async {
+        readinessProgress = await services.readiness.record(event)
+        await refreshReadiness()
+    }
+
+    func setWeeklyLimit(_ limit: Double?) async {
+        readinessProgress = await services.readiness.setWeeklyLimit(limit)
+        await refreshReadiness()
     }
 
     // MARK: Demo
@@ -171,6 +211,7 @@ final class AppModel {
         }
         savingsAccount = await services.savings.resetDemo(stage: newStage)
         _ = try? await services.transactions.loadDemoData(stage: newStage)
+        await services.readiness.resetDemo(stage: newStage)
     }
 
     // MARK: Plan

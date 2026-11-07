@@ -116,3 +116,14 @@ protocol SubscriptionServicing: AnyObject, Sendable {
     func startProTrial(cardNumber: String, expiry: String, cvc: String) async throws -> Plan
     func cancel() async -> Plan
 }
+
+/// The Readiness Score, streak and Wisdom progress. On-device in both containers.
+protocol ReadinessServicing: AnyObject, Sendable {
+    func progress() async -> ReadinessProgress
+    /// Scores the user, saves today's score for the 30-day chart and returns the result.
+    func evaluate(_ input: ReadinessInput) async -> ReadinessSnapshot
+    func record(_ event: WisdomEvent) async -> ReadinessProgress
+    func setWeeklyLimit(_ limit: Double?) async -> ReadinessProgress
+    /// Demo only: starting progress that fits the life stage.
+    func resetDemo(stage: LifeStage) async
+}
