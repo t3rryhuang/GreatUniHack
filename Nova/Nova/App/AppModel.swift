@@ -187,6 +187,20 @@ final class AppModel {
         await refreshReadiness()
     }
 
+    /// Creates today's quest from today's predictions (once a day), then refreshes the score.
+    func prepareQuest(predictions: [PredictionItem]) async {
+        guard hasData, readiness?.quest == nil else { return }
+        if await services.readiness.todaysQuest(predictions: predictions) != nil {
+            await refreshReadiness()
+        }
+    }
+
+    /// Demo: completes today's quest now so the demo doesn't have to wait a day.
+    func completeQuestForDemo() async {
+        readinessProgress = await services.readiness.completeTodaysQuest()
+        await refreshReadiness()
+    }
+
     func setWeeklyLimit(_ limit: Double?) async {
         readinessProgress = await services.readiness.setWeeklyLimit(limit)
         await refreshReadiness()

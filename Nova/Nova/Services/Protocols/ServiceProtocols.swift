@@ -124,6 +124,10 @@ protocol ReadinessServicing: AnyObject, Sendable {
     func evaluate(_ input: ReadinessInput) async -> ReadinessSnapshot
     func record(_ event: WisdomEvent) async -> ReadinessProgress
     func setWeeklyLimit(_ limit: Double?) async -> ReadinessProgress
+    /// Today's quest, created from today's predictions the first time it's asked for.
+    func todaysQuest(predictions: [PredictionItem]) async -> DailyQuest?
+    /// Demo only: marks today's quest as completed now instead of at the end of the day.
+    func completeTodaysQuest() async -> ReadinessProgress
     /// Demo only: starting progress that fits the life stage.
     func resetDemo(stage: LifeStage) async
 }

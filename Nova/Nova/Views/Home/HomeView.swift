@@ -19,6 +19,12 @@ struct HomeView: View {
                     if let readiness = model.readiness {
                         NavigationLink { ReadinessView() } label: { ReadinessSummaryCard(snapshot: readiness) }
                             .buttonStyle(.plain)
+                        if let quest = readiness.quest {
+                            DailyQuestCard(quest: quest, streak: readiness.streak, recentShield: readiness.recentShield)
+                        }
+                        if let boss = readiness.boss {
+                            WeeklyBossCard(boss: boss)
+                        }
                     }
                     if let briefing = viewModel.briefing {
                         BriefingCard(briefing: briefing)

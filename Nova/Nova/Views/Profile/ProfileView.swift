@@ -126,6 +126,12 @@ struct ProfileView: View {
                 .pickerStyle(.segmented)
                 .disabled(isSwitchingStage)
                 .accessibilityLabel("Demo mode")
+                Button {
+                    Task { await model.completeQuestForDemo() }
+                } label: {
+                    Label("Complete today's quest", systemImage: "checkmark.circle")
+                }
+                .disabled(model.readiness?.quest?.status != .pending)
                 if isSwitchingStage {
                     HStack(spacing: Spacing.xs) {
                         ProgressView()
@@ -135,7 +141,7 @@ struct ProfileView: View {
             } header: {
                 Text("Demo")
             } footer: {
-                Text("Teen mode is for 16 and 17-year-olds. Switching loads matching demo data.")
+                Text("Teen mode is for 16 and 17-year-olds. Switching loads matching demo data. Quests are normally checked at the end of the day.")
             }
 
             Section {

@@ -13,6 +13,7 @@ final class LocalReadinessService: ReadinessServicing {
     func progress() async -> ReadinessProgress { state }
 
     func evaluate(_ input: ReadinessInput) async -> ReadinessSnapshot {
+        state = ReadinessRules.settleQuests(state, transactions: input.transactions, now: input.now)
         let result = ReadinessRules.score(input, progress: state)
         let today = Calendar.current.startOfDay(for: input.now)
         if state.seedHistory {
@@ -34,8 +35,33 @@ final class LocalReadinessService: ReadinessServicing {
             weeklyLimit: result.limit,
             streak: state.streak,
             longestStreak: state.longestStreak,
-            shieldsLeft: 1
+            shieldsLeft: ReadinessRules.shieldsLeft(state, now: input.now),
+            quest: state.quests.first { $0.date == today },
+            boss: ReadinessRules.weeklyBoss(bills: result.bills, payments: result.payments, now: input.now),
+            recentShield: state.lastShieldEvent.flatMap { input.now.timeIntervalSince($0.date) < 7 * 86_400 ? $0 : nil }
         )
+    }
+
+    func todaysQuest(predictions: [PredictionItem]) async -> DailyQuest? {
+        let today = Calendar.current.startOfDay(for: .now)
+        if let existing = state.quests.first(where: { $0.date == today }) { return existing }
+        guard let quest = ReadinessRules.makeQuest(from: predictions, on: today) else { return nil }
+        state.quests.append(quest)
+        state.quests = Array(state.quests.suffix(60))
+        persist()
+        return quest
+    }
+
+    func completeTodaysQuest() async -> ReadinessProgress {
+        let today = Calendar.current.startOfDay(for: .now)
+        if let index = state.quests.firstIndex(where: { $0.date == today }), state.quests[index].status == .pending {
+            state.quests[index].status = .completed
+            state.streak += 1
+            state.questsCompleted += 1
+            state.longestStreak = max(state.longestStreak, state.streak)
+            persist()
+        }
+        return state
     }
 
     func record(_ event: WisdomEvent) async -> ReadinessProgress {
@@ -60,10 +86,14 @@ final class LocalReadinessService: ReadinessServicing {
         var fresh = ReadinessProgress()
         switch stage {
         case .teen:
-            fresh.streak = 23
-            fresh.longestStreak = 23
-            fresh.questsCompleted = 23
+            // The shield saved a 21-day streak two days ago; completing today's quest makes it 23.
+            fresh.streak = 22
+            fresh.longestStreak = 22
+            fresh.questsCompleted = 22
             fresh.whatIfs = 1
+            let shieldDay = Calendar.current.date(byAdding: .day, value: -2, to: Calendar.current.startOfDay(for: .now)) ?? .now
+            fresh.shieldMonths = [ReadinessRules.monthKey(shieldDay)]
+            fresh.lastShieldEvent = ShieldEvent(date: shieldDay, savedStreak: 21)
         case .adult:
             fresh.streak = 9
             fresh.longestStreak = 31

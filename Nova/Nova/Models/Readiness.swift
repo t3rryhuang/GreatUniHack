@@ -173,6 +173,10 @@ struct ReadinessSnapshot: Hashable, Sendable {
     let streak: Int
     let longestStreak: Int
     let shieldsLeft: Int
+    let quest: DailyQuest?
+    let boss: WeeklyBoss?
+    /// Set when the shield saved the streak in the last 7 days.
+    let recentShield: ShieldEvent?
 
     /// Change over the last 30 days (0 if there is no history yet).
     var monthChange: Int {
@@ -357,6 +361,11 @@ struct ReadinessProgress: Codable, Hashable, Sendable {
     var history: [DailyScore] = []
     /// Demo data asks for a 30-day history to be back-filled from the first real score.
     var seedHistory = false
+    /// Daily quests, newest last (the last 60 days are kept).
+    var quests: [DailyQuest] = []
+    /// Months ("2026-11") in which the monthly shield has been used.
+    var shieldMonths: [String] = []
+    var lastShieldEvent: ShieldEvent?
 
     init() {}
 
@@ -371,5 +380,118 @@ struct ReadinessProgress: Codable, Hashable, Sendable {
         weeklyLimit = try c.decodeIfPresent(Double.self, forKey: .weeklyLimit)
         history = try c.decodeIfPresent([DailyScore].self, forKey: .history) ?? []
         seedHistory = try c.decodeIfPresent(Bool.self, forKey: .seedHistory) ?? false
+        quests = try c.decodeIfPresent([DailyQuest].self, forKey: .quests) ?? []
+        shieldMonths = try c.decodeIfPresent([String].self, forKey: .shieldMonths) ?? []
+        lastShieldEvent = try c.decodeIfPresent(ShieldEvent.self, forKey: .lastShieldEvent)
+    }
+}
+
+// MARK: Daily quest, streak, shield and weekly boss
+
+struct DailyQuest: Codable, Hashable, Identifiable, Sendable {
+    enum Status: String, Codable, Sendable { case pending, completed, missed, shielded }
+
+    var id: Date { date }
+    /// Start of the quest's day.
+    let date: Date
+    let category: SpendingCategory
+    /// Spend under this amount in the category (the predicted average spend).
+    let limit: Double
+    var status: Status = .pending
+
+    var title: String { "Spend under \(limit.gbpWhole) on \(category.rawValue.lowercased()) today" }
+}
+
+struct ShieldEvent: Codable, Hashable, Sendable {
+    let date: Date
+    /// The streak the shield protected.
+    let savedStreak: Int
+
+    var message: String { "Your shield saved your \(savedStreak)-day streak" }
+}
+
+/// The next bill due in the coming week. "Defeated" when it's paid on time.
+struct WeeklyBoss: Hashable, Sendable {
+    enum Status: Sendable { case upcoming, defeated, missed }
+    let name: String
+    let amount: Double
+    let due: Date
+    let status: Status
+}
+
+extension ReadinessRules {
+    static let questExcluded: Set<SpendingCategory> = [.rent, .utilities, .subscriptions, .transfer, .income]
+
+    /// Today's quest from today's predictions: the most likely everyday spend,
+    /// with the predicted average amount (rounded up to the pound) as the limit.
+    static func makeQuest(from items: [PredictionItem], on date: Date, calendar: Calendar = .current) -> DailyQuest? {
+        guard let item = items.filter({ !questExcluded.contains($0.category) && $0.amount > 0 })
+            .max(by: { $0.probability < $1.probability }) else { return nil }
+        return DailyQuest(date: calendar.startOfDay(for: date), category: item.category, limit: max(1, item.amount.rounded(.up)))
+    }
+
+    /// What was spent in the quest's category on the quest's day.
+    static func spend(for quest: DailyQuest, in transactions: [Transaction], calendar: Calendar = .current) -> Double {
+        transactions.filter { $0.isExpense && $0.category == quest.category && calendar.isDate($0.date, inSameDayAs: quest.date) }
+            .reduce(0) { $0 + $1.spend }
+    }
+
+    static func monthKey(_ date: Date, calendar: Calendar = .current) -> String {
+        let c = calendar.dateComponents([.year, .month], from: date)
+        return String(format: "%04d-%02d", c.year ?? 0, c.month ?? 0)
+    }
+
+    static func shieldsLeft(_ progress: ReadinessProgress, now: Date) -> Int {
+        progress.shieldMonths.contains(monthKey(now)) ? 0 : 1
+    }
+
+    /// Checks every finished day's quest against the transactions (in date order).
+    /// A met quest extends the streak. A missed one uses the month's shield if it's
+    /// still there, otherwise the streak resets.
+    static func settleQuests(_ progress: ReadinessProgress, transactions: [Transaction], now: Date, calendar: Calendar = .current) -> ReadinessProgress {
+        var p = progress
+        let today = calendar.startOfDay(for: now)
+        for index in p.quests.indices.sorted(by: { p.quests[$0].date < p.quests[$1].date }) {
+            let quest = p.quests[index]
+            guard quest.status == .pending, quest.date < today else { continue }
+            if spend(for: quest, in: transactions, calendar: calendar) <= quest.limit {
+                p.quests[index].status = .completed
+                p.streak += 1
+                p.questsCompleted += 1
+            } else if !p.shieldMonths.contains(monthKey(quest.date, calendar: calendar)) {
+                p.quests[index].status = .shielded
+                p.shieldMonths.append(monthKey(quest.date, calendar: calendar))
+                p.lastShieldEvent = ShieldEvent(date: quest.date, savedStreak: p.streak)
+            } else {
+                p.quests[index].status = .missed
+                p.streak = 0
+            }
+            p.longestStreak = max(p.longestStreak, p.streak)
+        }
+        return p
+    }
+
+    /// The boss for this week: the soonest unpaid payment due in the next 7 days,
+    /// otherwise one paid on time in the last 7 days (defeated), or one overdue (missed).
+    static func weeklyBoss(bills: [RecurringBill], payments: [ScheduledPayment], now: Date, calendar: Calendar = .current) -> WeeklyBoss? {
+        let today = calendar.startOfDay(for: now)
+        let weekAhead = today.addingTimeInterval(8 * 86_400)
+        let weekAgo = today.addingTimeInterval(-7 * 86_400)
+
+        var upcoming = bills.filter { $0.nextDue >= today && $0.nextDue < weekAhead }
+            .map { WeeklyBoss(name: $0.name, amount: $0.amount, due: $0.nextDue, status: .upcoming) }
+        upcoming += payments.filter { $0.paid == nil && $0.due >= today && $0.due < weekAhead }
+            .map { WeeklyBoss(name: $0.name, amount: $0.amount, due: $0.due, status: .upcoming) }
+        if let next = upcoming.min(by: { $0.due < $1.due }) { return next }
+
+        let overdue = payments.filter { $0.paid == nil && $0.due < today && $0.due >= weekAgo && now > $0.due.addingTimeInterval(graceDays * 86_400) }
+        if let missed = overdue.max(by: { $0.due < $1.due }) {
+            return WeeklyBoss(name: missed.name, amount: missed.amount, due: missed.due, status: .missed)
+        }
+        let beaten = payments.filter { $0.isOnTime && ($0.paid ?? .distantPast) >= weekAgo }
+        if let won = beaten.max(by: { ($0.paid ?? $0.due) < ($1.paid ?? $1.due) }) {
+            return WeeklyBoss(name: won.name, amount: won.amount, due: won.due, status: .defeated)
+        }
+        return nil
     }
 }

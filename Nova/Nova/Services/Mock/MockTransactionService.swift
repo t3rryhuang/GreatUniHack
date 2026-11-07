@@ -18,7 +18,9 @@ final class MockTransactionService: TransactionServicing {
     func loadDemoData(stage: LifeStage) async throws -> [Transaction] {
         await simulateLatency(900)
         let manual = transactions.filter(\.isManual)
-        let demo = stage == .teen ? MockDataFactory.teenTransactions() : MockDataFactory.demoTransactions()
+        // Leave out demo transactions later today, so today's quest starts fresh.
+        let demo = (stage == .teen ? MockDataFactory.teenTransactions() : MockDataFactory.demoTransactions())
+            .filter { $0.date <= .now }
         transactions = (demo + manual).sorted { $0.date > $1.date }
         persist()
         return transactions
