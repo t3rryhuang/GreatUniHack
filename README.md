@@ -97,6 +97,17 @@ Stakes are optional: with £0 nobody's money moves and the winner earns points a
 
 ---
 
+### Nova Explorer: Manchester (Teen mode only)
+The 3D version of Money Quest. There is no entry point in Adult mode.
+- **3D voxel city** built entirely in code with RealityKit: the **Nancy Rothwell Building** (the hackathon venue: lobby, glass front, hackathon hall), **Piccadilly Gardens**, a **Metrolink stop** with a tram, the **Northern Quarter** market and the **Community Park** lot.
+- **Controls:** joystick, swipe to look, jump, talk/interact, third-person or first-person camera. The **Travel** menu lists every place and quest, so the game can be played without the joystick (VoiceOver users).
+- **Remi the stylist** greets you on first spawn and speaks with the ElevenLabs voice (the iOS voice offline). Describe your look by **push-to-talk** or chips; Remi updates your 3D avatar live until you tap "This is me". A manual editor is the fallback.
+- **Quests:** *The Budgeting Hackathon* (split £60 with sliders), *The Scam Spotter* (safe vs suspicious sponsor offers, including a money-mule trap), *The Tram Ticket Challenge* (single vs day vs weekly, with example fares), *Needs vs Wants Marketplace*. **Every existing Money Quest chapter** is hosted by an NPC in the city and plays the same levels.
+- **3D billboards** drawn from SwiftUI views: the next quest, the Community Park total, your Piggy Bank % and this week's event.
+- **Real-to-game sync:** reaching 25/50/75/100% of *your own* Piggy Bank goal and your saving streak give XP and Nova Coins (never based on £ amounts).
+- **Community Park:** a shared total on Upstash Redis. Each finished quest earns a park point; give up to 3 a day. The park grows from an empty lot to benches, trees, a fountain and a skatepark.
+- **Wardrobe and emotes:** spend coins on cosmetics (some unlocked by badges, never by money), wave, cheer or dance.
+
 ## Fairness principles
 
 The score and the teen features are built so habits count and money doesn't:
@@ -109,6 +120,8 @@ The score and the teen features are built so habits count and money doesn't:
 6. **F6, behaviour unlocks rewards.** Rank perks depend on rank (habits). The matched-savings bonus is fixed and the same for everyone (an example for the pitch, not a real offer).
 7. **F7, everyone can take part.** Any trusted adult can lend or share a bill; teens with nobody to borrow from can use a promise-to-myself transfer instead. Daily caps stop points being about free time.
 8. **F8, hardship protection.** If income drops by more than 30% month on month, goals are eased and the weekly limit follows the last 4 weeks, with a kind message.
+
+Nova Explorer follows the same principles: savings XP is relative to your own goal (F1, F3), every XP source shares one daily cap of 300 and park points are capped at 3 a day (F7), coins can't be bought (F3, F6), and everyone gets the same quests and budgets (F4).
 
 The DEBUG-only **Fairness check** (Profile > Demo) scores Teen A (about £15 a week pocket money) and Teen B (about £100 a week from a job) with the same habits side by side, plus Teen B with poor habits. Current result: **Teen A 681, Teen B 681, both Gold; Teen B with poor habits 328, Silver.**
 
@@ -254,6 +267,7 @@ xcodebuild -project Nova.xcodeproj -scheme Nova \
 | `-NovaBackendURL http://localhost:8000` | Use a local backend |
 | `-NovaScreen <name>` | DEBUG: open a screen at launch: `readiness`, `family`, `parent`, `graduation`, `report`, `quest`, `level`, `piggy`, `league`, `fairness`, `seasons`, `insights`, `arena`, `simulator`, `chat`, `profile` |
 | `-NovaAutoplay` / `-NovaAutoShake` | DEBUG: play a Money Quest level / shake the Piggy Bank automatically |
+| `-NovaScreen explorer` | DEBUG: open Nova Explorer (Teen mode). Add `-NovaExplorerTour` to walk through every zone, `-NovaExplorerSpot venue\|piccadilly\|tramStop\|northernQuarter\|park` to start somewhere else, or `-NovaExplorerOpen budget\|scam\|tram\|market\|park\|billboard\|wardrobe\|travel\|stylist` to open a panel |
 
 **2-minute demo:** launch with `-NovaTeenDemo` → Home shows Jamie's Readiness Score, daily quest, weekly boss, Money Quest and Piggy Bank → open the Piggy Bank and shake → play chapter 7 level 1 (money mules) → Profile > Demo > Fairness check (Teen A and Teen B both 681) → Road to 18 and the Readiness Report → Profile > Demo > Simulate 18th birthday.
 
@@ -312,6 +326,9 @@ The iOS app talks only to the protocols in `Nova/Nova/Services/Protocols/Service
 | `FamilyServicing` | Family loans and shared bills | `LocalFamilyService` | same |
 | `GameServicing` | Money Quest points, badges, levels | `LocalGameService` | same |
 | `LeagueServicing` | Friend and school leagues | `LocalLeagueService` (demo data) | same |
+| `ExplorerServicing` | Nova Explorer save game (avatar, XP, coins, quests, cosmetics) | `LocalExplorerService` | same |
+| `StylistServicing` | Remi the stylist | `RemoteStylistService` (`/explorer/stylist`, falls back on-device) | `MockStylistService` |
+| `CommunityParkServicing` | Shared Community Park total | `RemoteCommunityParkService` (`/explorer/park`) | `MockCommunityParkService` |
 
 ---
 
@@ -327,6 +344,14 @@ Production base URL: `https://nova-backend-silk.vercel.app`
 | `POST /nova/tts`, `POST /nova/transcribe` | ElevenLabs read-aloud and speech-to-text |
 | `POST /nova/week-ahead`, `/nova/budget-tips`, `/nova/runway`, `/nova/what-if`, `GET /nova/weather` | AI insights and live weather |
 | `GET/POST /arenas`, `GET /arenas/code/{code}`, `POST /arenas/join`, `GET /arenas/{id}`, `POST /arenas/{id}/sync`, `POST /arenas/{id}/settle` | Shared arenas. Modes include `most_improved`; `teen: true` arenas use each member's `baselineSpend` / `personalTarget` |
+
+### Nova Explorer API
+
+| Endpoint | Purpose |
+|---|---|
+| `POST /explorer/stylist` | `{message, look, history}` → `{reply, patch, confirm, source}`. Input max 500 characters (trimmed to 200); emails, phone numbers, postcodes and links get a privacy reply; the LLM can only choose catalogue values (others are dropped); replies are capped at 240 characters with links removed. Falls back to keyword rules without an LLM key |
+| `GET /explorer/park` | `{total, contributors}` |
+| `POST /explorer/park/contribute` | `{points: 1-3}` with `X-User-Id`. Max 3 points per player per day (429 after that); players are stored only as a salted SHA-256 hash |
 
 ### Gradio API (original endpoints)
 
@@ -431,6 +456,16 @@ The arena and chat tests use in-memory storage and a stand-in for the LLM, so th
 
 Never commit `.env` files. They are in `.gitignore`.
 
+## Nova Explorer: architecture, privacy and parents
+
+- **3D engine:** RealityKit `ARView` in non-AR mode inside SwiftUI (`ExplorerSceneView`). It works on iOS 13+, so no iOS 18 gate is needed. All geometry is generated in code (`VoxelBuilder` merges boxes of one colour into one mesh); billboards and name tags are SwiftUI views rendered with `ImageRenderer` into RealityKit textures. No model, texture or sound files.
+- **Code layout:** pure rules in `Models/Explorer/` (`AvatarLook` catalogue and `StylistGuard`, `StylistRules`, `ExplorerEconomy`, `ExplorerQuestRules`, `ParkStage`, `CosmeticCatalogue`); game state in `ExplorerViewModel`; the scene in `Views/Explorer/ExplorerScene.swift`; city geometry in `ManchesterWorld.swift`.
+- **Privacy:** the save game stays on the phone. The only data sent is what you say to Remi (screened for personal details on the phone and the server) and anonymous park points (a hashed id). There's no chat with other players and no names are shared. Remi never asks for personal details.
+- **Parents:** the existing "What your parent sees" preview is unchanged; the game shows no money amounts. Explorer only appears in Teen mode, and a parent can switch it off by turning Teen mode off.
+- **Offline:** with `-NovaOffline` (or no connection) Remi uses on-device rules, read-aloud uses the iOS voice, and the park uses a local total.
+
 ## Screenshots
+
+Nova Explorer screenshots and a 45-second tour recording are in [docs/screenshots/explorer](docs/screenshots/explorer).
 
 Pitch screenshots (iPhone 17 Pro Max simulator) are in [docs/screenshots](docs/screenshots): Teen Home, Readiness, Money Quest hub, a level and its summary, the Piggy Bank (light, dark and Teen A at 80%), the fairness check, Family, the borrowing sandbox, Road to 18, the Readiness Report, the parent preview, leagues, teen arenas, the pastel Insights cards and a level at the largest text size.

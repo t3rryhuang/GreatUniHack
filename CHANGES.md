@@ -120,3 +120,19 @@ Nova becomes a path from 16 to a first real credit product: one character and on
 - `arena.py`: `most_improved` mode, optional `baselineSpend` and `personalTarget` on sync, `teen` arenas with personal rules; older clients keep working.
 - `nova_api.py`: optional `stage` on `/nova/chat` with teen safety rules; weather copy no longer mentions the pub.
 - Tests: `tests/test_arena.py`, `tests/test_arena_teen_fairness.py`, `tests/test_chat_stage.py` (35 tests pass).
+
+## 9. Nova Explorer: Manchester (branch `feature/nova-explorer`)
+
+The 3D version of Money Quest, in Teen mode only.
+
+**iOS**
+- RealityKit 3D voxel city built in code: the Nancy Rothwell Building, Piccadilly Gardens, a Metrolink stop, the Northern Quarter and the Community Park. Joystick, swipe to look, jump, interact, third/first-person camera, collisions, and a Travel menu so every quest works without the joystick.
+- Remi the stylist: push-to-talk or chips, ElevenLabs voice (iOS voice offline), live 3D avatar preview, manual editor, catalogue-only changes and on-device privacy screening (`StylistGuard`).
+- Quests: Budgeting Hackathon, Scam Spotter (money-mule trap), Tram Ticket Challenge (example fares), Needs vs Wants Marketplace, plus every Money Quest chapter hosted by a city NPC.
+- 3D billboards textured from SwiftUI; real-to-game savings sync (% of your own goal and streak); XP, levels, Nova Coins with one daily XP cap; badges; wardrobe and emotes; Community Park with visible stages.
+- New protocols `ExplorerServicing`, `StylistServicing`, `CommunityParkServicing`, each with on-device and remote implementations in both containers. `VoiceServicing.transcribe(context:)` lets the offline mock give stylist phrases.
+- Entry points: Teen Home and the Money Quest hub. DEBUG: `-NovaScreen explorer`, `-NovaExplorerTour`, `-NovaExplorerSpot`, `-NovaExplorerOpen`.
+
+**Backend (`test-backend/`)** (needs a Vercel redeploy)
+- `explorer.py`: `/explorer/stylist` (validated LLM with rules fallback) and `/explorer/park` (+ `/contribute`, 3 points a day, hashed ids); `store.incrby`.
+- `tests/test_explorer.py` (75 backend tests pass).
