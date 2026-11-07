@@ -479,3 +479,5 @@ Nova Explorer screenshots and a 45-second tour recording are in [docs/screenshot
 One-minute app walkthroughs (recorded with `-NovaWalkthrough`, which drives the app through its main screens): [Teen mode](docs/screenshots/walkthrough/teen-walkthrough.mp4) and [Adult mode](docs/screenshots/walkthrough/adult-walkthrough.mp4).
 
 Pitch screenshots (iPhone 17 Pro Max simulator) are in [docs/screenshots](docs/screenshots): Teen Home, Readiness, Money Quest hub, a level and its summary, the Piggy Bank (light, dark and Teen A at 80%), the fairness check, Family, the borrowing sandbox, Road to 18, the Readiness Report, the parent preview, leagues, teen arenas, the pastel Insights cards and a level at the largest text size.
+
+
