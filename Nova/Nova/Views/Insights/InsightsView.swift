@@ -160,7 +160,7 @@ struct SeasonalCard: View {
                     if season.name == current {
                         Label("Now: \(season.name.lowercased())", systemImage: season.symbol)
                             .font(.novaCaption.weight(.semibold))
-                            .foregroundStyle(season.ink)
+                            .foregroundStyle(NovaColor.heading)
                             .padding(.horizontal, Spacing.sm).padding(.vertical, Spacing.xxs)
                             .background(season.fill, in: Capsule())
                     }
@@ -289,7 +289,9 @@ struct WeeklyRecapCard: View {
             GeometryReader { proxy in
                 ZStack(alignment: .leading) {
                     Capsule().fill(NovaColor.card)
-                    Capsule().fill(fill).frame(width: max(18, proxy.size.width * value / scale))
+                    Capsule().fill(fill)
+                        .overlay(Capsule().strokeBorder(ink, lineWidth: 1.5))
+                        .frame(width: max(18, proxy.size.width * value / scale))
                 }
             }
             .frame(height: 18)
