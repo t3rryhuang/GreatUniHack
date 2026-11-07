@@ -303,10 +303,17 @@ uvicorn main:app --reload --port 8001
 The backend in `test-backend/` is ready for Vercel (`api/index.py` entrypoint + `vercel.json`).
 
 1. Import the repo in Vercel and set **Root Directory** to `test-backend`.
-2. Add environment variables: `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`, `OPENAI_API_KEY` (optional: `USER_COUNTRY`, `USER_SUBDIVISION`, `USER_LAT`, `USER_LON`; `.env.example` uses Manchester).
+2. Add environment variables:
+   - `RUNWARE_API_KEY`: one key for Claude, Gemini and GPT, plus the what-if illustrations. Without it, set `ANTHROPIC_API_KEY`, `GEMINI_API_KEY` and `OPENAI_API_KEY` instead.
+   - `ELEVENLABS_API_KEY`: read-aloud and voice input.
+   - Upstash Redis for arenas, caches and the Explorer park: add it from the Vercel Marketplace (`vercel integration add upstash/upstash-kv`), which sets `KV_REST_API_URL` and `KV_REST_API_TOKEN`.
+   - `EXPLORER_SALT`: any long random string, used to hash player ids in the Community Park.
+   - Optional: `USER_COUNTRY`, `USER_SUBDIVISION`, `USER_LAT`, `USER_LON` (`.env.example` uses Manchester).
 3. Deploy, then point the iOS app's service layer at the deployment URL (see below).
 
 Alternatively, without the GitHub integration: `cd test-backend && npx vercel --prod`.
+
+**Deploys blocked on the Hobby plan?** Vercel's free plan only deploys when the latest commit's author is a member of the Vercel team. If a teammate's commit is on top, make a small commit of your own first, then deploy.
 
 `requirements.txt` holds only what the API needs; Gradio and pytest live in `requirements-dev.txt` (`pip install -r requirements-dev.txt` for local UI/tests).
 
