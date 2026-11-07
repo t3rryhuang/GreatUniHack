@@ -15,7 +15,7 @@ struct CreateArenaView: View {
                 }
                 Section {
                     Picker("Mode", selection: $viewModel.mode) {
-                        ForEach(ArenaMode.allCases) { mode in
+                        ForEach(ArenaMode.available(for: model.stage)) { mode in
                             Label(mode.title, systemImage: mode.symbol).tag(mode)
                         }
                     }
@@ -29,8 +29,11 @@ struct CreateArenaView: View {
                 Section(viewModel.mode.targetLabel) {
                     if viewModel.mode == .viceStreak {
                         Picker("Vice to avoid", selection: $viewModel.vice) {
-                            ForEach(SpendingCategory.vices) { Text($0.rawValue).tag($0) }
+                            ForEach(SpendingCategory.vices(for: model.stage)) { Text($0.rawValue).tag($0) }
                         }
+                    } else if viewModel.mode == .mostImproved {
+                        Text("Each person is compared with their own spending in the same number of days before the arena started.")
+                            .font(.novaCallout).foregroundStyle(NovaColor.body)
                     } else {
                         Stepper(value: $viewModel.target, in: 25...5_000, step: 25) {
                             HStack {
@@ -42,16 +45,24 @@ struct CreateArenaView: View {
                     }
                 }
                 Section {
-                    Picker("Stake per person", selection: $viewModel.stake) {
-                        ForEach(CreateArenaViewModel.stakeOptions, id: \.self) { value in
-                            Text(value == 0 ? "No stake" : value.gbpWhole).tag(value)
+                    if !model.isTeen {
+                        Picker("Stake per person", selection: $viewModel.stake) {
+                            ForEach(CreateArenaViewModel.stakeOptions, id: \.self) { value in
+                                Text(value == 0 ? "No stake" : value.gbpWhole).tag(value)
+                            }
                         }
                     }
                     DatePicker("Ends", selection: $viewModel.endDate, in: Date.now.addingTimeInterval(86_400)..., displayedComponents: .date)
                 } header: {
-                    Text("Stake and length")
+                    Text(model.isTeen ? "Length" : "Stake and length")
                 } footer: {
-                    Text("Your stake moves from your \(model.savingsAccount?.name ?? "savings account") (\(model.savingsAccount?.balance.gbp ?? "£0") available) into the arena pot.")
+                    if model.isTeen {
+                        Text("Teen arenas never use money. The winner earns points and a badge.")
+                    } else if viewModel.stake == 0 {
+                        Text("No money changes hands. The winner earns points and a badge.")
+                    } else {
+                        Text("Your stake moves from your \(model.savingsAccount?.name ?? "savings account") (\(model.savingsAccount?.balance.gbp ?? "£0") available) into the arena pot.")
+                    }
                 }
                 if let error = viewModel.errorMessage {
                     Section { Text(error).foregroundStyle(NovaColor.error) }
@@ -59,6 +70,7 @@ struct CreateArenaView: View {
             }
             .scrollContentBackground(.hidden)
             .background(NovaColor.page)
+            .onAppear { viewModel.configure(for: model.stage) }
             .navigationTitle("New arena")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -107,7 +119,7 @@ struct JoinArenaView: View {
                     .onChange(of: viewModel.code) { _, newValue in
                         if newValue.count == 6 { Task { await viewModel.lookUp(model: model) } }
                     }
-                Text("Demo codes: \(MockArenaService.demoJoinCodes.joined(separator: " or "))")
+                Text("Demo codes: \(MockArenaService.demoJoinCodes(for: model.stage).joined(separator: " or "))")
                     .font(.novaCaption).foregroundStyle(NovaColor.muted)
 
                 if viewModel.isWorking && viewModel.preview == nil {
@@ -122,7 +134,7 @@ struct JoinArenaView: View {
                         Text(arena.name).font(.novaSection).foregroundStyle(NovaColor.brandText)
                         Text(arena.mode.rule).font(.novaCallout).foregroundStyle(NovaColor.body)
                         HStack {
-                            Metric(label: "Stake", value: arena.stakeAmount.gbpWhole)
+                            Metric(label: "Stake", value: arena.isMoneyFree ? "None" : arena.stakeAmount.gbpWhole)
                             Spacer()
                             Metric(label: "Members", value: "\(arena.members.count)")
                             Spacer()
@@ -136,7 +148,7 @@ struct JoinArenaView: View {
                                 }
                             }
                         } label: {
-                            if viewModel.isWorking { ProgressView() } else { Text("Join and stake \(arena.stakeAmount.gbpWhole)") }
+                            if viewModel.isWorking { ProgressView() } else { Text(arena.isMoneyFree ? "Join" : "Join and stake \(arena.stakeAmount.gbpWhole)") }
                         }
                         .buttonStyle(.novaPrimary)
                     }

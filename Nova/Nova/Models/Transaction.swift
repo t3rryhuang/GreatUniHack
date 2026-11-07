@@ -57,6 +57,11 @@ enum SpendingCategory: String, Codable, CaseIterable, Identifiable, Hashable, Se
     /// Categories counted as "vices" in the Vice Streak arena.
     static let vices: [SpendingCategory] = [.coffee, .dining, .drinks, .shopping, .entertainment]
 
+    /// Vices offered for a life stage. Teen mode leaves out Drinks.
+    static func vices(for stage: LifeStage) -> [SpendingCategory] {
+        stage == .teen ? vices.filter { $0 != .drinks } : vices
+    }
+
     /// Categories a user can pick when logging an expense by hand.
     static let expenseCategories: [SpendingCategory] = allCases.filter { $0 != .income && $0 != .transfer }
 

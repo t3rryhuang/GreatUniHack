@@ -1,10 +1,21 @@
 import Foundation
 
-/// Arena game modes, unchanged from the original app.
+/// Arena game modes. Most Improved is new in Money Readiness.
 enum ArenaMode: String, Codable, CaseIterable, Identifiable, Sendable {
     case budgetGuardian = "budget_guardian"
     case viceStreak = "vice_streak"
     case savingsSprint = "savings_sprint"
+    case mostImproved = "most_improved"
+
+    /// Modes offered in Teen mode (no Vice Streak).
+    static let teenModes: [ArenaMode] = [.mostImproved, .budgetGuardian, .savingsSprint]
+
+    static func available(for stage: LifeStage) -> [ArenaMode] {
+        stage == .teen ? teenModes : allCases
+    }
+
+    /// Modes that use a spending target.
+    var usesTarget: Bool { self == .budgetGuardian || self == .savingsSprint }
 
     var id: String { rawValue }
 
@@ -13,6 +24,7 @@ enum ArenaMode: String, Codable, CaseIterable, Identifiable, Sendable {
         case .budgetGuardian: "Budget Guardian"
         case .viceStreak: "Vice Streak"
         case .savingsSprint: "Savings Sprint"
+        case .mostImproved: "Most Improved"
         }
     }
 
@@ -20,7 +32,8 @@ enum ArenaMode: String, Codable, CaseIterable, Identifiable, Sendable {
         switch self {
         case .budgetGuardian: "Stay under your spending target. The lowest spender under budget wins."
         case .viceStreak: "Avoid your vice category. The last one standing wins."
-        case .savingsSprint: "First to reach the savings target wins the prize pot."
+        case .savingsSprint: "First to reach the savings target wins."
+        case .mostImproved: "Cut your spending compared with your own previous period. The biggest % drop wins, so everyone starts level."
         }
     }
 
@@ -29,6 +42,7 @@ enum ArenaMode: String, Codable, CaseIterable, Identifiable, Sendable {
         case .budgetGuardian: "shield.lefthalf.filled"
         case .viceStreak: "flame.fill"
         case .savingsSprint: "flag.checkered"
+        case .mostImproved: "chart.line.downtrend.xyaxis"
         }
     }
 
@@ -37,6 +51,7 @@ enum ArenaMode: String, Codable, CaseIterable, Identifiable, Sendable {
         case .budgetGuardian: "Spending limit"
         case .viceStreak: "Allowed spend"
         case .savingsSprint: "Savings target"
+        case .mostImproved: "Compared with"
         }
     }
 }
@@ -57,6 +72,15 @@ struct ArenaMember: Identifiable, Codable, Hashable, Sendable {
     /// When the member reached the savings target (Savings Sprint).
     var targetReachedAt: Date?
     var lastSyncedAt: Date?
+    /// Most Improved: spending in the previous period of the same length.
+    /// Optional, so arenas saved by older builds (and older backends) still load.
+    var baselineSpend: Double?
+
+    /// Most Improved: share of spending cut versus the baseline (0.25 = 25% less). Nil without a baseline.
+    var reduction: Double? {
+        guard let baselineSpend, baselineSpend > 0 else { return nil }
+        return (baselineSpend - currentSpend) / baselineSpend
+    }
 
     var initials: String {
         name.split(separator: " ").prefix(2).compactMap(\.first).map(String.init).joined().uppercased()
@@ -80,6 +104,8 @@ struct Arena: Identifiable, Codable, Hashable, Sendable {
     var winnerID: UUID?
 
     var prizePot: Double { stakeAmount * Double(members.count) }
+    /// No money changes hands: the winner earns points and badges.
+    var isMoneyFree: Bool { stakeAmount <= 0 }
 
     var daysLeft: Int {
         max(0, Calendar.current.dateComponents([.day], from: .now, to: endDate).day ?? 0)
@@ -125,9 +151,48 @@ enum ArenaRules {
                 if aDone != bDone { return aDone }
                 if aDone { return (a.targetReachedAt ?? far) < (b.targetReachedAt ?? far) }
                 return a.currentSavings > b.currentSavings
+            case .mostImproved:
+                return mostImprovedOrder(a, b)
             }
         }
         return ranked + arena.members.filter(\.isEliminated)
+    }
+
+    /// Most Improved order (same as `_standings` in test-backend/arena.py):
+    /// members with a baseline first, then the biggest % reduction, then the
+    /// lower current spend, then name.
+    static func mostImprovedOrder(_ a: ArenaMember, _ b: ArenaMember) -> Bool {
+        let aHas = a.reduction != nil, bHas = b.reduction != nil
+        if aHas != bHas { return aHas }
+        let ar = a.reduction ?? 0, br = b.reduction ?? 0
+        if ar != br { return ar > br }
+        if a.currentSpend != b.currentSpend { return a.currentSpend < b.currentSpend }
+        return a.name < b.name
+    }
+
+    /// The caller's own progress for an arena, from their transactions.
+    /// Used by both the on-device and the backend arena services.
+    static func progress(for arena: Arena, transactions: [Transaction], now: Date = .now) -> (spend: Double, savings: Double, baseline: Double?) {
+        let end = min(arena.endDate, now)
+        let inPeriod = transactions.filter { $0.date >= arena.startDate && $0.date <= end }
+        func everyday(_ list: [Transaction]) -> Double {
+            list.filter { $0.isExpense && ![.rent, .transfer, .utilities].contains($0.category) }.reduce(0) { $0 + $1.spend }
+        }
+        switch arena.mode {
+        case .budgetGuardian:
+            return (everyday(inPeriod), 0, nil)
+        case .viceStreak:
+            let vice = arena.viceCategory ?? .coffee
+            return (inPeriod.filter { $0.category == vice && $0.isExpense }.reduce(0) { $0 + $1.spend }, 0, nil)
+        case .savingsSprint:
+            return (0, inPeriod.filter { $0.category == .transfer && $0.isExpense }.reduce(0) { $0 + $1.spend }, nil)
+        case .mostImproved:
+            // Compare like with like: the same number of days just before the arena started.
+            let elapsed = max(0, end.timeIntervalSince(arena.startDate))
+            let baseStart = arena.startDate.addingTimeInterval(-elapsed)
+            let before = transactions.filter { $0.date >= baseStart && $0.date < arena.startDate }
+            return (everyday(inPeriod), 0, elapsed > 0 ? everyday(before) : nil)
+        }
     }
 
     static func winner(of arena: Arena) -> ArenaMember? { standings(for: arena).first }
@@ -148,6 +213,11 @@ enum ArenaRules {
 
     /// Whether a member is close to losing (80% of the target used).
     static func isAtRisk(_ member: ArenaMember, in arena: Arena) -> Bool {
-        arena.mode != .savingsSprint && member.currentSpend >= arena.targetAmount * 0.8
+        (arena.mode == .budgetGuardian || arena.mode == .viceStreak) && member.currentSpend >= arena.targetAmount * 0.8
+    }
+
+    /// Whether going over the target knocks a member out of first place (not for Savings Sprint or Most Improved).
+    static func hasSpendingLimit(_ mode: ArenaMode) -> Bool {
+        mode == .budgetGuardian || mode == .viceStreak
     }
 }

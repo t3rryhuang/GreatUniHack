@@ -247,7 +247,64 @@ enum MockDataFactory {
 
     static let friendNames = ["Priya Shah", "Tom Okafor", "Ellie Clarke", "Sam Hughes", "Aisha Rahman", "Jack Murphy"]
 
-    static func demoArenas(currentUser: UserProfile, now: Date = .now) -> [Arena] {
+    /// Teen arenas never use money: the winner earns points and badges.
+    static func teenArenas(currentUser: UserProfile, now: Date = .now) -> [Arena] {
+        let calendar = Calendar.current
+        func days(_ value: Int) -> Date { calendar.date(byAdding: .day, value: value, to: now) ?? now }
+        return [
+            Arena(
+                name: "Sixth Form Spend-Off",
+                mode: .mostImproved,
+                targetAmount: 0,
+                stakeAmount: 0,
+                startDate: days(-10),
+                endDate: days(11),
+                joinCode: "604218",
+                status: .active,
+                members: [
+                    ArenaMember(name: currentUser.name, isCurrentUser: true, currentSpend: 58, lastSyncedAt: now, baselineSpend: 84),
+                    ArenaMember(name: "Maya Ahmed", currentSpend: 61, lastSyncedAt: now, baselineSpend: 80),
+                    ArenaMember(name: "Leo Byrne", currentSpend: 70, lastSyncedAt: now, baselineSpend: 76),
+                    ArenaMember(name: "Zara Khan", currentSpend: 49, lastSyncedAt: now, baselineSpend: 72)
+                ]
+            ),
+            Arena(
+                name: "Festival Fund",
+                mode: .savingsSprint,
+                targetAmount: 150,
+                stakeAmount: 0,
+                startDate: days(-20),
+                endDate: days(25),
+                joinCode: "830571",
+                status: .active,
+                members: [
+                    ArenaMember(name: currentUser.name, isCurrentUser: true, currentSavings: 80, lastSyncedAt: now),
+                    ArenaMember(name: "Maya Ahmed", currentSavings: 95, lastSyncedAt: now)
+                ]
+            ),
+            Arena(
+                name: "October Budget Battle",
+                mode: .budgetGuardian,
+                targetAmount: 120,
+                stakeAmount: 0,
+                startDate: days(-38),
+                endDate: days(-8),
+                joinCode: "275139",
+                status: .completed,
+                members: [
+                    ArenaMember(id: teenWinnerID, name: currentUser.name, isCurrentUser: true, currentSpend: 104, lastSyncedAt: days(-8)),
+                    ArenaMember(name: "Leo Byrne", currentSpend: 117, lastSyncedAt: days(-8)),
+                    ArenaMember(name: "Zara Khan", currentSpend: 131, exceededAt: days(-12), lastSyncedAt: days(-8))
+                ],
+                winnerID: teenWinnerID
+            )
+        ]
+    }
+
+    private static let teenWinnerID = UUID(uuidString: "0B1D5C1E-7EE0-4A11-9C55-2A7F3E6B9D01") ?? UUID()
+
+    static func demoArenas(currentUser: UserProfile, stage: LifeStage = .adult, now: Date = .now) -> [Arena] {
+        if stage == .teen { return teenArenas(currentUser: currentUser, now: now) }
         let calendar = Calendar.current
         func days(_ value: Int) -> Date { calendar.date(byAdding: .day, value: value, to: now) ?? now }
         let me = ArenaMember(name: currentUser.name, isCurrentUser: true, currentSpend: 212, currentSavings: 180, lastSyncedAt: now)

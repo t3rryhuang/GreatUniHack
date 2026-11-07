@@ -25,7 +25,10 @@ from pydantic import BaseModel, Field
 
 router = APIRouter(prefix="/arenas", tags=["arena"])
 
-Mode = Literal["budget_guardian", "vice_streak", "savings_sprint"]
+Mode = Literal["budget_guardian", "vice_streak", "savings_sprint", "most_improved"]
+
+# Modes where going over the target counts against you.
+LIMIT_MODES = ("budget_guardian", "vice_streak")
 
 # ---------------------------------------------------------------------------
 # Storage
@@ -141,7 +144,14 @@ def _standings(arena: dict) -> list[dict]:
         return d.timestamp() if d else far
 
     def key(m: dict):
-        if mode in ("budget_guardian", "vice_streak"):
+        if mode == "most_improved":
+            # Same order as ArenaRules.mostImprovedOrder in the iOS app: members with a
+            # baseline first, biggest % cut, then lower current spend, then name.
+            r = _reduction(m)
+            if r is None:
+                return (1, 0.0, m["currentSpend"], m.get("name", ""))
+            return (0, -r, m["currentSpend"], m.get("name", ""))
+        if mode in LIMIT_MODES:
             if m["currentSpend"] <= target:
                 return (0, m["currentSpend"])
             # Over budget: whoever went over later ranks higher.
@@ -152,6 +162,14 @@ def _standings(arena: dict) -> list[dict]:
         return (1, -m["currentSavings"])
 
     return sorted(active, key=key) + [m for m in arena["members"] if m.get("isEliminated")]
+
+
+def _reduction(m: dict) -> float | None:
+    """Most Improved: share of spending cut versus the member's own baseline, or None."""
+    base = m.get("baselineSpend")
+    if base is None or base <= 0:
+        return None
+    return (base - m["currentSpend"]) / base
 
 
 def _can_settle(arena: dict) -> str | None:
@@ -177,6 +195,7 @@ def _new_member(user_id: str, name: str) -> dict:
         "exceededAt": None,
         "targetReachedAt": None,
         "lastSyncedAt": _iso(_now()),
+        "baselineSpend": None,
     }
 
 
@@ -200,6 +219,8 @@ class JoinArena(BaseModel):
 class SyncArena(BaseModel):
     currentSpend: float = 0
     currentSavings: float = 0
+    # Most Improved only. Optional so older clients keep working.
+    baselineSpend: float | None = None
 
 
 @router.get("")
@@ -300,12 +321,14 @@ async def sync_arena(arena_id: str, body: SyncArena, x_user_id: str | None = Hea
         raise HTTPException(status_code=403, detail="You're not in this arena.")
     if arena["status"] != "completed":
         now = _iso(_now())
-        if arena["mode"] == "vice_streak":
+        if arena["mode"] in ("vice_streak", "most_improved"):
             member["currentSpend"] = round(body.currentSpend, 2)
         else:
             member["currentSpend"] = round(max(member["currentSpend"], body.currentSpend), 2)
         member["currentSavings"] = round(max(member["currentSavings"], body.currentSavings), 2)
-        over = arena["mode"] != "savings_sprint" and member["currentSpend"] > arena["targetAmount"]
+        if body.baselineSpend is not None:
+            member["baselineSpend"] = round(body.baselineSpend, 2)
+        over = arena["mode"] in LIMIT_MODES and member["currentSpend"] > arena["targetAmount"]
         if over and not member.get("exceededAt"):
             member["exceededAt"] = now
             if arena["mode"] == "vice_streak":

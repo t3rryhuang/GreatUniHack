@@ -97,6 +97,12 @@ protocol ArenaServicing: AnyObject, Sendable {
     func preview(code: String) async throws -> Arena
     func sync(arenaID: UUID, transactions: [Transaction]) async throws -> Arena
     func settle(arenaID: UUID) async throws -> ArenaSettlement
+    /// Demo only: arenas that fit the life stage. Shared backend arenas are left alone.
+    func resetDemo(stage: LifeStage) async
+}
+
+extension ArenaServicing {
+    func resetDemo(stage: LifeStage) async {}
 }
 
 /// The NatWest savings account that holds arena stakes and receives prize pots.

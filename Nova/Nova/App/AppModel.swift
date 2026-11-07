@@ -226,6 +226,7 @@ final class AppModel {
         savingsAccount = await services.savings.resetDemo(stage: newStage)
         _ = try? await services.transactions.loadDemoData(stage: newStage)
         await services.readiness.resetDemo(stage: newStage)
+        await services.arenas.resetDemo(stage: newStage)
     }
 
     // MARK: Plan

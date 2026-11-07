@@ -13,7 +13,7 @@ struct ArenaListView: View {
     var body: some View {
         NavigationStack(path: $path) {
             NovaScreen {
-                ArenaHero(account: model.savingsAccount)
+                ArenaHero(account: model.isTeen ? nil : model.savingsAccount, isTeen: model.isTeen)
                 HStack(spacing: Spacing.sm) {
                     Button {
                         if model.require(.arenaCreate) { showCreate = true }
@@ -65,7 +65,7 @@ struct ArenaListView: View {
                 ArenaDetailView(arena: arena) { viewModel.upsert($0) }
             }
             .refreshable { await viewModel.load(model: model) }
-            .task { await viewModel.load(model: model) }
+            .task(id: model.stage) { await viewModel.load(model: model) }
             .sheet(isPresented: $showCreate) {
                 CreateArenaView { arena in
                     viewModel.upsert(arena)
@@ -79,7 +79,7 @@ struct ArenaListView: View {
                 }
             }
             .sheet(isPresented: Binding(get: { !introSeen }, set: { if !$0 { introSeen = true } })) {
-                ArenaIntroView { introSeen = true }
+                ArenaIntroView(isTeen: model.isTeen) { introSeen = true }
             }
         }
     }
@@ -88,11 +88,12 @@ struct ArenaListView: View {
 /// Purple band showing the savings account that holds stakes.
 private struct ArenaHero: View {
     let account: SavingsAccount?
+    var isTeen = false
 
     var body: some View {
         NovaBrandBand {
             Label("Arena", systemImage: "trophy.fill").font(.novaHeadline)
-            Text("Save with friends. Winner takes the pot.")
+            Text(isTeen ? "Challenge friends. Earn points and badges." : "Save with friends. Winner takes the pot.")
                 .font(.novaTitle)
                 .fixedSize(horizontal: false, vertical: true)
             if let account {
@@ -131,8 +132,13 @@ private struct ArenaRow: View {
                 }
                 Spacer()
                 VStack(alignment: .trailing, spacing: 2) {
-                    Text(arena.prizePot.gbpWhole).font(.novaHeadline).foregroundStyle(NovaColor.brandText).monospacedDigit()
-                    Text("pot").font(.novaCaption).foregroundStyle(NovaColor.body)
+                    if arena.isMoneyFree {
+                        Image(systemName: "star.circle.fill").font(.title3).foregroundStyle(NovaColor.brandText).accessibilityHidden(true)
+                        Text("Points").font(.novaCaption).foregroundStyle(NovaColor.body)
+                    } else {
+                        Text(arena.prizePot.gbpWhole).font(.novaHeadline).foregroundStyle(NovaColor.brandText).monospacedDigit()
+                        Text("pot").font(.novaCaption).foregroundStyle(NovaColor.body)
+                    }
                 }
             }
             if arena.status == .completed {
@@ -157,6 +163,7 @@ private struct ArenaRow: View {
 
 /// First-visit explainer. Ported from arena-onboarding.tsx.
 private struct ArenaIntroView: View {
+    var isTeen = false
     let done: () -> Void
 
     var body: some View {
@@ -164,17 +171,25 @@ private struct ArenaIntroView: View {
             NovaScreen {
                 Text("Save more together. Each arena has a goal, a pot and an end date.")
                     .font(.novaBody).foregroundStyle(NovaColor.body)
-                ForEach(ArenaMode.allCases) { mode in
+                ForEach(isTeen ? ArenaMode.teenModes : ArenaMode.allCases) { mode in
                     NovaCard {
                         Label(mode.title, systemImage: mode.symbol).font(.novaHeadline).foregroundStyle(NovaColor.brandText)
                         Text(mode.rule).font(.novaCallout).foregroundStyle(NovaColor.body)
                     }
                 }
-                NovaNotice(
-                    kind: .info,
-                    title: "Your stake stays at NatWest",
-                    message: "When you join, your stake moves from your Flexible Saver into the arena pot. The winner's pot is paid straight back into their savings account."
-                )
+                if isTeen {
+                    NovaNotice(
+                        kind: .info,
+                        title: "No money involved",
+                        message: "Teen arenas never use money. You compete on your own progress and the winner earns points and a badge."
+                    )
+                } else {
+                    NovaNotice(
+                        kind: .info,
+                        title: "Your stake stays at NatWest",
+                        message: "When you join, your stake moves from your Flexible Saver into the arena pot. The winner's pot is paid straight back into their savings account."
+                    )
+                }
                 Button("Got it", action: done).buttonStyle(.novaPrimary)
             }
             .navigationTitle("How arenas work")
