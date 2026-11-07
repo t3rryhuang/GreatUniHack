@@ -15,6 +15,9 @@ struct ServiceContainer {
     let family: FamilyServicing
     let game: GameServicing
     let leagues: LeagueServicing
+    let explorer: ExplorerServicing
+    let stylist: StylistServicing
+    let park: CommunityParkServicing
 
     static func mock() -> ServiceContainer {
         let auth = MockAuthService()
@@ -31,7 +34,10 @@ struct ServiceContainer {
             readiness: LocalReadinessService(),
             family: LocalFamilyService(),
             game: LocalGameService(),
-            leagues: LocalLeagueService()
+            leagues: LocalLeagueService(),
+            explorer: LocalExplorerService(),
+            stylist: MockStylistService(),
+            park: MockCommunityParkService()
         )
     }
 
@@ -53,7 +59,10 @@ struct ServiceContainer {
             readiness: LocalReadinessService(),
             family: LocalFamilyService(),
             game: LocalGameService(),
-            leagues: LocalLeagueService()
+            leagues: LocalLeagueService(),
+            explorer: LocalExplorerService(),
+            stylist: RemoteStylistService(client: client),
+            park: RemoteCommunityParkService(client: client, auth: auth)
         )
     }
 }

@@ -88,10 +88,15 @@ protocol VoiceServicing: AnyObject, Sendable {
     func transcribe() async throws -> String
     /// Ends a recording started by `transcribe()` early (the user tapped the mic again).
     func stopListening()
+    /// Push-to-talk with a hint about what's being said (the offline mock uses it).
+    func transcribe(context: VoiceContext) async throws -> String
 }
+
+enum VoiceContext: Sendable { case chat, stylist }
 
 extension VoiceServicing {
     func stopListening() {}
+    func transcribe(context: VoiceContext) async throws -> String { try await transcribe() }
 }
 
 /// Arenas: create, join, sync spending and settle. Replaces Supabase + Solana.
@@ -171,4 +176,25 @@ protocol GameServicing: AnyObject, Sendable {
 /// Friend and school leagues (Teen mode). On-device demo data in both containers.
 protocol LeagueServicing: AnyObject, Sendable {
     func leagues(me: LeagueEntry) async -> [League]
+}
+
+/// Nova Explorer save game (avatar, XP, coins, quests, cosmetics). On-device in both
+/// containers: progress stays private to the phone.
+protocol ExplorerServicing: AnyObject, Sendable {
+    func progress() async -> ExplorerProgress
+    func save(_ progress: ExplorerProgress) async
+    func resetDemo(profile: DemoProfile) async
+}
+
+/// Remi the stylist: turns what the player says into an avatar change.
+/// Live: `/explorer/stylist` (LLM, validated server-side). Offline: on-device keyword rules.
+protocol StylistServicing: AnyObject, Sendable {
+    func reply(to message: String, current: AvatarLook, history: [StylistTurn]) async -> StylistReply
+}
+
+/// The shared Community Park total. Live: `/explorer/park` on Upstash Redis. Offline: on-device.
+protocol CommunityParkServicing: AnyObject, Sendable {
+    func status() async -> ParkStatus
+    /// Adds 1-3 points (validated and capped per player per day on the server).
+    func contribute(points: Int) async throws -> ParkStatus
 }

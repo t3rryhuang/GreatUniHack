@@ -90,6 +90,13 @@ final class SystemVoiceService: NSObject, VoiceServicing, AVSpeechSynthesizerDel
         isSpeaking = false
     }
 
+    func transcribe(context: VoiceContext) async throws -> String {
+        guard context == .stylist else { return try await transcribe() }
+        await simulateLatency(1_400)
+        return ["Can I have a purple hoodie and curly hair?", "Blue jacket and white trainers please",
+                "Long pink hair with glasses", "Make my hoodie green"].randomElement() ?? "Purple hoodie"
+    }
+
     func transcribe() async throws -> String {
         await simulateLatency(1_800)
         return ["How much did I spend on coffee this month?",

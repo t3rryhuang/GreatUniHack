@@ -24,6 +24,9 @@ final class AppModel {
     private(set) var family = FamilyState()
     /// Money Quest points, badges and completed levels.
     private(set) var game = GameProgress()
+    /// Nova Explorer save game and the shared Community Park.
+    private(set) var explorer = ExplorerProgress()
+    private(set) var park: ParkStatus?
     var errorMessage: String?
 
     /// Presentation state for app-wide sheets.
@@ -375,6 +378,81 @@ final class AppModel {
         await refreshReadiness()
     }
 
+    // MARK: Nova Explorer
+
+    /// Loads the save game and the park, then turns new real savings milestones into XP.
+    /// Returns the rewards given (for toasts).
+    @discardableResult
+    func loadExplorer() async -> [ExplorerReward] {
+        explorer = await services.explorer.progress()
+        park = await services.park.status()
+        return await syncSavingsToExplorer()
+    }
+
+    /// Real-to-game sync: Piggy Bank % of your own goal and your saving streak (never £ amounts).
+    func syncSavingsToExplorer() async -> [ExplorerReward] {
+        let streak = PiggyRules.savingStreakMonths(ReadinessRules.savingDeposits(transactions, piggy: piggy), now: .now)
+        let rewards = ExplorerEconomy.savingsRewards(piggy: piggy, savingStreakMonths: streak, hardshipScale: hardshipScale,
+                                                     claimed: explorer.claimedRewards)
+        guard !rewards.isEmpty else { return [] }
+        var progress = explorer
+        var given: [ExplorerReward] = []
+        for reward in rewards {
+            let xp = ExplorerEconomy.grant(reward.xp, coins: reward.coins, to: &progress)
+            progress.claimedRewards.append(reward.key)
+            given.append(ExplorerReward(key: reward.key, title: reward.title, xp: xp, coins: reward.coins))
+            if reward.key.hasSuffix(":100"), !progress.badges.contains("saver") { progress.badges.append("saver") }
+        }
+        await saveExplorer(progress)
+        return given
+    }
+
+    func saveExplorer(_ progress: ExplorerProgress) async {
+        explorer = progress
+        await services.explorer.save(progress)
+    }
+
+    /// Records a finished Explorer quest: capped XP and coins, a park point and any badge.
+    func completeExplorerQuest(_ questID: String, isMoneyQuest: Bool, badge: String? = nil) async -> (xp: Int, coins: Int) {
+        var progress = explorer
+        let reward = ExplorerEconomy.questReward(questID: questID, isMoneyQuest: isMoneyQuest, progress: progress)
+        let coinsBefore = progress.coins
+        let xp = ExplorerEconomy.grant(reward.xp, coins: reward.coins, to: &progress)
+        if !progress.completedQuests.contains(questID) {
+            progress.completedQuests.append(questID)
+            progress.parkTokens += 1
+        }
+        if let badge, !progress.badges.contains(badge) { progress.badges.append(badge) }
+        await saveExplorer(progress)
+        return (xp, progress.coins - coinsBefore)
+    }
+
+    /// Gives banked park points (up to today's cap) to the shared Community Park.
+    func contributeToPark() async throws -> Int {
+        var progress = explorer
+        let room = max(0, ExplorerEconomy.dailyParkPoints - progress.parkPointsToday())
+        let points = min(progress.parkTokens, room)
+        guard points > 0 else { throw ServiceError.nothingDue }
+        park = try await services.park.contribute(points: points)
+        progress.parkTokens -= points
+        progress.parkPointsByDay[MoneyQuestRules.dayKey(.now), default: 0] += points
+        progress.parkContributed += points
+        await saveExplorer(progress)
+        return points
+    }
+
+    /// Marks a quest as done without extra XP (for example a Money Quest chapter NPC).
+    func markExplorerQuest(_ questID: String) async {
+        guard !explorer.completedQuests.contains(questID) else { return }
+        var progress = explorer
+        progress.completedQuests.append(questID)
+        await saveExplorer(progress)
+    }
+
+    func refreshPark() async {
+        park = await services.park.status()
+    }
+
     // MARK: Money Quest
 
     /// Records a finished level. Points are capped per day; Wisdom counts up to 3 new levels a day.
@@ -415,6 +493,7 @@ final class AppModel {
         await services.arenas.resetDemo(profile: profile)
         await services.family.resetDemo(profile: profile)
         await services.game.resetDemo(profile: profile)
+        await services.explorer.resetDemo(profile: profile)
     }
 
     // MARK: Plan
