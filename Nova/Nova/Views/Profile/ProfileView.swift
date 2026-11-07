@@ -10,6 +10,7 @@ struct ProfileView: View {
     @State private var showSavings = false
     @State private var showUpgrade = false
     @State private var showAddTransaction = false
+    @State private var showReport = false
 
     var body: some View {
         List {
@@ -68,6 +69,12 @@ struct ProfileView: View {
 
             Section {
                 Button {
+                    showReport = true
+                } label: {
+                    Label("Export financial health report (PDF)", systemImage: "doc.richtext")
+                }
+                .disabled(!model.hasData)
+                Button {
                     showAddTransaction = true
                 } label: {
                     Label("Import or add transactions", systemImage: "square.and.arrow.down")
@@ -80,7 +87,7 @@ struct ProfileView: View {
             } header: {
                 Text("Your data")
             } footer: {
-                Text("Supports PDF, JSON and CSV statements.")
+                Text("The report is a one-page PDF summary you can save or share. Imports support PDF, JSON and CSV statements.")
             }
 
             Section {
@@ -131,6 +138,7 @@ struct ProfileView: View {
         .sheet(isPresented: $showSavings) { SavingsAccountView() }
         .sheet(isPresented: $showUpgrade) { UpgradeView() }
         .sheet(isPresented: $showAddTransaction) { AddTransactionView() }
+        .sheet(isPresented: $showReport) { FinancialReportSheet() }
     }
 
     private func initials(_ name: String) -> String {
