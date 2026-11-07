@@ -27,6 +27,10 @@ struct HomeView: View {
                         }
                     }
                     if model.isTeen {
+                        NavigationLink { MoneyQuestHubView() } label: {
+                            RowLink(title: "Money Quest", subtitle: "\(model.game.pointsToday()) of \(MoneyQuestConfig.dailyPointsCap) points today · play a 2-minute level", symbol: "gamecontroller.fill")
+                        }
+                        .buttonStyle(.plain)
                         NavigationLink { FamilyView() } label: {
                             RowLink(title: "Family", subtitle: "Loans and shared bills with someone you trust", symbol: "person.2.fill")
                         }

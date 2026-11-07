@@ -37,7 +37,7 @@ enum ReadinessStat: String, Codable, CaseIterable, Identifiable, Sendable {
         case .balance: "How many of the last 8 weeks your spending stayed under your weekly limit."
         case .endurance: "Your daily quest streak and how long you've been building a money history."
         case .resilience: "How many months your savings would cover your normal spending."
-        case .wisdom: "What-ifs you've explored, lessons finished and daily quests completed."
+        case .wisdom: "Money Quest levels, the borrowing sandbox, what-ifs and daily quests."
         }
     }
 
@@ -47,7 +47,7 @@ enum ReadinessStat: String, Codable, CaseIterable, Identifiable, Sendable {
         case .balance: "Keep each week's spending under your limit, even by a little."
         case .endurance: "Complete a daily quest every day to grow your streak."
         case .resilience: "Build a buffer of one month's spending, then keep going towards six."
-        case .wisdom: "Try a what-if in the Simulator or finish the borrowing sandbox."
+        case .wisdom: "Play a Money Quest level (up to 3 a day count), try a what-if or finish the borrowing sandbox."
         }
     }
 
@@ -148,7 +148,7 @@ struct DailyScore: Codable, Hashable, Identifiable, Sendable {
 
 /// Things that count towards Wisdom.
 enum WisdomEvent: String, Codable, Sendable {
-    case whatIf, lesson, sandbox
+    case whatIf, lesson, sandbox, moneyQuestLevel
 }
 
 /// Everything the score needs, gathered by `AppModel`.
@@ -223,7 +223,7 @@ enum ReadinessRules {
             StatScore(stat: .balance, points: bal.points, detail: "\(bal.weeksUnder) of \(balanceWeeks) weeks under \(bal.limit.gbpWhole)"),
             StatScore(stat: .endurance, points: end, detail: "\(progress.streak)-day streak, \(months) months of history"),
             StatScore(stat: .resilience, points: res, detail: String(format: "%.1f months of spending saved", input.summary.runwayMonths)),
-            StatScore(stat: .wisdom, points: wis, detail: "\(progress.whatIfs) what-ifs, \(progress.lessons) lessons, \(progress.questsCompleted) quests")
+            StatScore(stat: .wisdom, points: wis, detail: "\(progress.moneyQuestLevels) Money Quest levels, \(progress.whatIfs) what-ifs, \(progress.questsCompleted) quests\(progress.sandboxDone ? ", sandbox done" : "")")
         ])
         return (score, bills, payments, bal.weekly, bal.limit)
     }
@@ -332,9 +332,13 @@ enum ReadinessRules {
 
     // MARK: Wisdom (restraint and literacy)
 
-    /// What-ifs 15 each (max 60), lessons 30 each (max 60), daily quests 4 each (max 80).
+    /// Money Quest levels 10 each (max 80; at most 3 a day count, see MoneyQuestRules),
+    /// the borrowing sandbox 30, what-ifs and lessons 10 each (max 30), daily quests 2 each (max 60).
     static func wisdom(_ progress: ReadinessProgress) -> Int {
-        min(progress.whatIfs * 15, 60) + min(progress.lessons * 30, 60) + min(progress.questsCompleted * 4, 80)
+        min(progress.moneyQuestLevels * 10, 80)
+            + (progress.sandboxDone ? 30 : 0)
+            + min((progress.whatIfs + progress.lessons) * 10, 30)
+            + min(progress.questsCompleted * 2, 60)
     }
 
     // MARK: Helpers
@@ -369,6 +373,8 @@ struct ReadinessProgress: Codable, Hashable, Sendable {
     /// Graduation checklist items the teen ticks themselves.
     var votingChecked = false
     var reportPreviewed = false
+    /// Money Quest levels that counted towards Wisdom.
+    var moneyQuestLevels = 0
 
     init() {}
 
@@ -388,6 +394,7 @@ struct ReadinessProgress: Codable, Hashable, Sendable {
         lastShieldEvent = try c.decodeIfPresent(ShieldEvent.self, forKey: .lastShieldEvent)
         votingChecked = try c.decodeIfPresent(Bool.self, forKey: .votingChecked) ?? false
         reportPreviewed = try c.decodeIfPresent(Bool.self, forKey: .reportPreviewed) ?? false
+        moneyQuestLevels = try c.decodeIfPresent(Int.self, forKey: .moneyQuestLevels) ?? 0
     }
 }
 

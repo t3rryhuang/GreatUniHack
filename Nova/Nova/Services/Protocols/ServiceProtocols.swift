@@ -157,3 +157,10 @@ protocol FamilyServicing: AnyObject, Sendable {
     func payBill(billID: UUID) async throws -> FamilyPayment
     func resetDemo(stage: LifeStage) async
 }
+
+/// Money Quest progress (points, badges, completed levels). On-device in both containers.
+protocol GameServicing: AnyObject, Sendable {
+    func progress() async -> GameProgress
+    func completeLevel(_ levelID: String, in chapter: QuestChapter, correctAnswers: Int) async -> LevelReward
+    func resetDemo(stage: LifeStage) async
+}

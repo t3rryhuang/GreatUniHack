@@ -22,6 +22,8 @@ final class AppModel {
     private(set) var readinessProgress = ReadinessProgress()
     /// Family loans and shared bills (Teen mode).
     private(set) var family = FamilyState()
+    /// Money Quest points, badges and completed levels.
+    private(set) var game = GameProgress()
     var errorMessage: String?
 
     /// Presentation state for app-wide sheets.
@@ -167,6 +169,7 @@ final class AppModel {
             errorMessage = error.localizedDescription
         }
         family = await services.family.state()
+        game = await services.game.progress()
         await refreshReadiness()
     }
 
@@ -296,6 +299,16 @@ final class AppModel {
                                              amount: -payment.amount, category: .transfer))
     }
 
+    // MARK: Money Quest
+
+    /// Records a finished level. Points are capped per day; Wisdom counts up to 3 new levels a day.
+    func completeQuestLevel(_ level: QuestLevel, in chapter: QuestChapter, correctAnswers: Int) async -> LevelReward {
+        let reward = await services.game.completeLevel(level.id, in: chapter, correctAnswers: correctAnswers)
+        game = await services.game.progress()
+        if reward.countsForWisdom { await recordWisdom(.moneyQuestLevel) }
+        return reward
+    }
+
     // MARK: Demo
 
     /// Profile > Demo switch: changes the stage and loads matching demo data.
@@ -322,6 +335,7 @@ final class AppModel {
         await services.readiness.resetDemo(stage: newStage)
         await services.arenas.resetDemo(stage: newStage)
         await services.family.resetDemo(stage: newStage)
+        await services.game.resetDemo(stage: newStage)
     }
 
     // MARK: Plan

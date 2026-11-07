@@ -69,8 +69,9 @@ final class LocalReadinessService: ReadinessServicing {
         case .whatIf: state.whatIfs += 1
         case .lesson: state.lessons += 1
         case .sandbox:
-            if !state.sandboxDone { state.lessons += 1 }
             state.sandboxDone = true
+        case .moneyQuestLevel:
+            state.moneyQuestLevels += 1
         }
         persist()
         return state
@@ -103,6 +104,7 @@ final class LocalReadinessService: ReadinessServicing {
             fresh.longestStreak = 22
             fresh.questsCompleted = 22
             fresh.whatIfs = 1
+            fresh.moneyQuestLevels = 2
             let shieldDay = Calendar.current.date(byAdding: .day, value: -2, to: Calendar.current.startOfDay(for: .now)) ?? .now
             fresh.shieldMonths = [ReadinessRules.monthKey(shieldDay)]
             fresh.lastShieldEvent = ShieldEvent(date: shieldDay, savedStreak: 21)

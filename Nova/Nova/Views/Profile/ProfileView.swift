@@ -56,6 +56,7 @@ struct ProfileView: View {
 
             if model.isTeen {
                 Section("Teen") {
+                    NavigationLink { MoneyQuestHubView() } label: { Label("Money Quest", systemImage: "gamecontroller.fill") }
                     NavigationLink { FamilyView() } label: { Label("Family loans and bills", systemImage: "person.2.fill") }
                     NavigationLink { ParentPreviewView() } label: { Label("What your parent sees", systemImage: "eye.fill") }
                     NavigationLink { GraduationView() } label: { Label("Road to 18", systemImage: "graduationcap.fill") }
