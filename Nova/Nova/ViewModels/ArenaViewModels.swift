@@ -75,7 +75,18 @@ final class CreateArenaViewModel {
     static let stakeOptions: [Double] = [0, 5, 10, 20, 50]
 
     var isValid: Bool {
-        !name.trimmingCharacters(in: .whitespaces).isEmpty && endDate > .now && (mode == .viceStreak || target > 0)
+        !name.trimmingCharacters(in: .whitespaces).isEmpty && endDate > .now && (!mode.usesTarget || target > 0 || isTeen)
+    }
+    /// Teen arenas use personal limits and targets instead of a shared £ target.
+    private(set) var isTeen = false
+
+    /// Teen mode: no stakes, no Vice Streak and no Drinks.
+    func configure(for stage: LifeStage) {
+        guard stage == .teen else { return }
+        isTeen = true
+        stake = 0
+        if !ArenaMode.teenModes.contains(mode) { mode = .mostImproved }
+        if vice == .drinks { vice = .coffee }
     }
 
     func create(model: AppModel) async -> Arena? {
@@ -85,10 +96,11 @@ final class CreateArenaViewModel {
             let arena = try await model.services.arenas.create(
                 name: name.trimmingCharacters(in: .whitespaces),
                 mode: mode,
-                target: mode == .viceStreak ? 0 : target,
-                stake: stake,
+                target: mode.usesTarget && !model.isTeen ? target : 0,
+                stake: model.isTeen ? 0 : stake,
                 vice: mode == .viceStreak ? vice : nil,
-                endDate: endDate
+                endDate: endDate,
+                teen: model.isTeen
             )
             await model.refreshSavings()
             return arena
@@ -117,12 +129,25 @@ final class JoinArenaViewModel {
         isWorking = true
         defer { isWorking = false }
         do {
-            preview = try await model.services.arenas.preview(code: code)
+            let found = try await model.services.arenas.preview(code: code)
+            if model.isTeen, let reason = Self.teenBlockReason(found) {
+                preview = nil
+                errorMessage = reason
+                return
+            }
+            preview = found
             errorMessage = nil
         } catch {
             preview = nil
             errorMessage = error.localizedDescription
         }
+    }
+
+    /// Teens can only join arenas without money, in a teen mode.
+    static func teenBlockReason(_ arena: Arena) -> String? {
+        if !arena.isMoneyFree { return "Teen accounts can only join arenas without money. Ask your friend to start one with no stake." }
+        if !ArenaMode.teenModes.contains(arena.mode) { return "\(arena.mode.title) isn't available in Teen mode." }
+        return nil
     }
 
     func join(model: AppModel) async -> Arena? {

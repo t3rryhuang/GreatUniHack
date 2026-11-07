@@ -17,7 +17,7 @@ class MockInsightsService: InsightsServicing {
         let base = [6, 7, 9, 12, 15, 18, 21, 21, 18, 14, 10, 7][month - 1]
         let impact: String = switch condition {
         case .rain, .drizzle: "Rainy days usually mean more Uber trips and food delivery."
-        case .sunny: "Sunny days usually mean more pub and park spending."
+        case .sunny: "Sunny days usually mean more spending out and about."
         case .cold: "Cold days push up coffee and heating costs."
         case .wind, .cloudy: "A normal day for your spending."
         }

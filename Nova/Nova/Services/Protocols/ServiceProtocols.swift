@@ -13,6 +13,8 @@ enum ServiceError: LocalizedError, Equatable {
     case insufficientFunds
     case unreadableFile
     case paymentDeclined
+    case invalidAmount
+    case nothingDue
     case network(String)
 
     var errorDescription: String? {
@@ -25,6 +27,8 @@ enum ServiceError: LocalizedError, Equatable {
         case .insufficientFunds: "There isn't enough money in your savings account for this stake."
         case .unreadableFile: "We couldn't read that file. Use a JSON, CSV or PDF statement."
         case .paymentDeclined: "Your card was declined. Check the details and try again."
+        case .invalidAmount: "Enter an amount of £1 or more."
+        case .nothingDue: "There's nothing to pay right now."
         case .network(let message): message
         }
     }
@@ -37,17 +41,23 @@ protocol AuthServicing: AnyObject, Sendable {
     func signUp(name: String, email: String, password: String) async throws -> UserProfile
     func signOut() async
     func updateBank(_ bank: Bank) async
+    func updateDateOfBirth(_ date: Date?) async
 }
 
 /// The user's transactions. Replaces the original backend upload endpoints
 /// (`/parse-pdf`) and the local transaction store.
 protocol TransactionServicing: AnyObject, Sendable {
     func fetchTransactions() async throws -> [Transaction]
-    func loadDemoData() async throws -> [Transaction]
+    /// Replaces the stored transactions with demo data for a profile (manual entries are kept).
+    func loadDemoData(profile: DemoProfile) async throws -> [Transaction]
     func importStatement(_ data: Data, type: ImportFileType) async throws -> [Transaction]
     func add(_ transaction: Transaction) async throws
     func delete(id: UUID) async throws
     func clearAll() async throws
+}
+
+extension TransactionServicing {
+    func loadDemoData() async throws -> [Transaction] { try await loadDemoData(profile: .adult) }
 }
 
 /// Predictions and insights. Maps to the original `/week-ahead`, `/income-runway`,
@@ -65,7 +75,8 @@ protocol InsightsServicing: AnyObject, Sendable {
 
 /// The "Ask Nova" assistant. Replaces the original Groq chat service.
 protocol ChatServicing: AnyObject, Sendable {
-    func reply(to message: String, history: [ChatMessage], summary: FinancialSummary) async throws -> String
+    /// `stage` tells the assistant whether it's talking to a teen (no credit products, short answers).
+    func reply(to message: String, history: [ChatMessage], summary: FinancialSummary, stage: LifeStage) async throws -> String
 }
 
 /// Speech in and out. Replaces ElevenLabs (text to speech) and Whisper (speech to text).
@@ -77,20 +88,32 @@ protocol VoiceServicing: AnyObject, Sendable {
     func transcribe() async throws -> String
     /// Ends a recording started by `transcribe()` early (the user tapped the mic again).
     func stopListening()
+    /// Push-to-talk with a hint about what's being said (the offline mock uses it).
+    func transcribe(context: VoiceContext) async throws -> String
 }
+
+enum VoiceContext: Sendable { case chat, stylist }
 
 extension VoiceServicing {
     func stopListening() {}
+    func transcribe(context: VoiceContext) async throws -> String { try await transcribe() }
 }
 
 /// Arenas: create, join, sync spending and settle. Replaces Supabase + Solana.
 protocol ArenaServicing: AnyObject, Sendable {
     func myArenas() async throws -> [Arena]
-    func create(name: String, mode: ArenaMode, target: Double, stake: Double, vice: SpendingCategory?, endDate: Date) async throws -> Arena
+    /// `teen` makes a teen arena: no money, personal baselines and targets, % only.
+    func create(name: String, mode: ArenaMode, target: Double, stake: Double, vice: SpendingCategory?, endDate: Date, teen: Bool) async throws -> Arena
     func join(code: String) async throws -> Arena
     func preview(code: String) async throws -> Arena
     func sync(arenaID: UUID, transactions: [Transaction]) async throws -> Arena
     func settle(arenaID: UUID) async throws -> ArenaSettlement
+    /// Demo only: arenas that fit the profile. Shared backend arenas are left alone.
+    func resetDemo(profile: DemoProfile) async
+}
+
+extension ArenaServicing {
+    func resetDemo(profile: DemoProfile) async {}
 }
 
 /// The NatWest savings account that holds arena stakes and receives prize pots.
@@ -99,6 +122,10 @@ protocol SavingsServicing: AnyObject, Sendable {
     func withdrawStake(_ amount: Double, reference: String) async throws -> SavingsAccount
     func depositPayout(_ amount: Double, reference: String) async throws -> SavingsAccount
     func topUp(_ amount: Double) async throws -> SavingsAccount
+    /// Saves the Piggy Bank goal, deposits and promise (money moves with `topUp`).
+    func updatePiggy(_ piggy: PiggyBank?) async -> SavingsAccount
+    /// Demo only: resets the account to a balance that fits the life stage.
+    func resetDemo(profile: DemoProfile) async -> SavingsAccount
 }
 
 /// Free / Pro plan. Replaces Stripe.
@@ -107,4 +134,67 @@ protocol SubscriptionServicing: AnyObject, Sendable {
     var trialEndsAt: Date? { get }
     func startProTrial(cardNumber: String, expiry: String, cvc: String) async throws -> Plan
     func cancel() async -> Plan
+}
+
+/// The Readiness Score, streak and Wisdom progress. On-device in both containers.
+protocol ReadinessServicing: AnyObject, Sendable {
+    func progress() async -> ReadinessProgress
+    /// Scores the user, saves today's score for the 30-day chart and returns the result.
+    func evaluate(_ input: ReadinessInput) async -> ReadinessSnapshot
+    func record(_ event: WisdomEvent) async -> ReadinessProgress
+    func setWeeklyLimit(_ limit: Double?) async -> ReadinessProgress
+    /// Today's quest, created from today's predictions the first time it's asked for.
+    func todaysQuest(predictions: [PredictionItem]) async -> DailyQuest?
+    /// Demo only: marks today's quest as completed now instead of at the end of the day.
+    func completeTodaysQuest() async -> ReadinessProgress
+    /// Graduation checklist items set by hand (voting) or by opening the report.
+    func setVotingChecked(_ done: Bool) async -> ReadinessProgress
+    func markReportPreviewed() async -> ReadinessProgress
+    /// Demo only: starting progress that fits the life stage.
+    func resetDemo(profile: DemoProfile) async
+}
+
+/// Family loans and shared bills (Teen mode). On-device in both containers.
+protocol FamilyServicing: AnyObject, Sendable {
+    func state() async -> FamilyState
+    func requestLoan(purpose: String, amount: Double, instalments: Int, lenderName: String, relationship: String) async throws -> FamilyLoan
+    /// Demo: the trusted adult answers after a short delay.
+    func awaitApproval(loanID: UUID) async throws -> FamilyLoan
+    func payInstalment(loanID: UUID) async throws -> FamilyPayment
+    func addBill(name: String, amount: Double, dayOfMonth: Int, partnerName: String, relationship: String) async throws -> SharedBill
+    func payBill(billID: UUID) async throws -> FamilyPayment
+    func resetDemo(profile: DemoProfile) async
+}
+
+/// Money Quest progress (points, badges, completed levels). On-device in both containers.
+protocol GameServicing: AnyObject, Sendable {
+    func progress() async -> GameProgress
+    func completeLevel(_ levelID: String, in chapter: QuestChapter, correctAnswers: Int) async -> LevelReward
+    func resetDemo(profile: DemoProfile) async
+}
+
+/// Friend and school leagues (Teen mode). On-device demo data in both containers.
+protocol LeagueServicing: AnyObject, Sendable {
+    func leagues(me: LeagueEntry) async -> [League]
+}
+
+/// Nova Explorer save game (avatar, XP, coins, quests, cosmetics). On-device in both
+/// containers: progress stays private to the phone.
+protocol ExplorerServicing: AnyObject, Sendable {
+    func progress() async -> ExplorerProgress
+    func save(_ progress: ExplorerProgress) async
+    func resetDemo(profile: DemoProfile) async
+}
+
+/// Remi the stylist: turns what the player says into an avatar change.
+/// Live: `/explorer/stylist` (LLM, validated server-side). Offline: on-device keyword rules.
+protocol StylistServicing: AnyObject, Sendable {
+    func reply(to message: String, current: AvatarLook, history: [StylistTurn]) async -> StylistReply
+}
+
+/// The shared Community Park total. Live: `/explorer/park` on Upstash Redis. Offline: on-device.
+protocol CommunityParkServicing: AnyObject, Sendable {
+    func status() async -> ParkStatus
+    /// Adds 1-3 points (validated and capped per player per day on the server).
+    func contribute(points: Int) async throws -> ParkStatus
 }

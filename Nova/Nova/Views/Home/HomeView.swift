@@ -4,6 +4,7 @@ import SwiftUI
 struct HomeView: View {
     @Environment(AppModel.self) private var model
     @State private var viewModel = HomeViewModel()
+    @State private var showExplorer = false
 
     var body: some View {
         NavigationStack {
@@ -15,6 +16,36 @@ struct HomeView: View {
                 } else {
                     if let briefing = viewModel.briefing {
                         WeatherHero(briefing: briefing)
+                    }
+                    if model.hardshipScale < 1 { HardshipNotice() }
+                    if let readiness = model.readiness {
+                        NavigationLink { ReadinessView() } label: { ReadinessSummaryCard(snapshot: readiness) }
+                            .buttonStyle(.plain)
+                        if let quest = readiness.quest {
+                            DailyQuestCard(quest: quest, streak: readiness.streak, recentShield: readiness.recentShield)
+                        }
+                        if let boss = readiness.boss {
+                            WeeklyBossCard(boss: boss)
+                        }
+                    }
+                    if model.isTeen {
+                        Button { showExplorer = true } label: { ExplorerEntryCard() }
+                            .buttonStyle(.plain)
+                        NavigationLink { MoneyQuestHubView() } label: {
+                            RowLink(title: "Money Quest", subtitle: "\(model.game.pointsToday()) of \(MoneyQuestConfig.dailyPointsCap) points today · play a 2-minute level", symbol: "gamecontroller.fill")
+                        }
+                        .buttonStyle(.plain)
+                        NavigationLink { PiggyBankView() } label: {
+                            RowLink(title: "Piggy Bank", subtitle: model.piggy.map { "\(PiggyRules.progress($0, scale: model.hardshipScale).percent) of your \($0.goalName.lowercased()) goal · shake to hear it" } ?? "Save towards your own goal",
+                                    symbol: "sterlingsign.circle.fill")
+                        }
+                        .buttonStyle(.plain)
+                        NavigationLink { FamilyView() } label: {
+                            RowLink(title: "Family", subtitle: "Loans and shared bills with someone you trust", symbol: "person.2.fill")
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    if let briefing = viewModel.briefing {
                         BriefingCard(briefing: briefing)
                     }
                     TodayPredictions(prediction: viewModel.weekAhead.first)
@@ -37,6 +68,7 @@ struct HomeView: View {
                     .accessibilityLabel("Add transaction")
                 }
             }
+            .fullScreenCover(isPresented: $showExplorer) { ExplorerView() }
             .refreshable { await viewModel.load(model: model, force: true) }
             .task(id: model.dataVersion) { await viewModel.load(model: model) }
         }

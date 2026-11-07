@@ -10,16 +10,16 @@ final class RemoteChatService: ChatServicing {
 
     init(client: BackendClient) { self.client = client }
 
-    func reply(to message: String, history: [ChatMessage], summary: FinancialSummary) async throws -> String {
+    func reply(to message: String, history: [ChatMessage], summary: FinancialSummary, stage: LifeStage) async throws -> String {
         struct Turn: Encodable { let role: String; let content: String }
-        struct Body: Encodable { let message: String; let history: [Turn]; let summary: WireSummary }
+        struct Body: Encodable { let message: String; let history: [Turn]; let summary: WireSummary; let stage: String }
         struct Wire: Decodable { let reply: String }
         let turns = history.suffix(20).map { Turn(role: $0.role == .user ? "user" : "assistant", content: $0.text) }
         do {
-            let r: Wire = try await client.send("POST", "nova/chat", body: Body(message: message, history: turns, summary: WireSummary(summary)))
+            let r: Wire = try await client.send("POST", "nova/chat", body: Body(message: message, history: turns, summary: WireSummary(summary), stage: stage.rawValue))
             return r.reply
         } catch {
-            return try await fallback.reply(to: message, history: history, summary: summary)
+            return try await fallback.reply(to: message, history: history, summary: summary, stage: stage)
         }
     }
 }

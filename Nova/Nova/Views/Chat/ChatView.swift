@@ -6,6 +6,8 @@ struct ChatView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var viewModel = ChatViewModel()
     @FocusState private var inputFocused: Bool
+    /// Prefilled question, for example from Money Quest's "Ask Nova about this".
+    var initialDraft: String?
 
     var body: some View {
         NavigationStack {
@@ -21,7 +23,7 @@ struct ChatView: View {
                         if viewModel.messages.count == 1 {
                             VStack(alignment: .leading, spacing: Spacing.xs) {
                                 Text("Try asking").overline()
-                                ForEach(ChatViewModel.starters, id: \.self) { starter in
+                                ForEach(model.isTeen ? ChatViewModel.teenStarters : ChatViewModel.starters, id: \.self) { starter in
                                     Button(starter) { Task { await viewModel.send(model: model, text: starter) } }
                                         .buttonStyle(NovaChipStyle())
                                 }
@@ -38,6 +40,7 @@ struct ChatView: View {
                 }
             }
             .background(NovaColor.page)
+            .task { if let initialDraft, viewModel.draft.isEmpty { viewModel.draft = initialDraft } }
             .safeAreaInset(edge: .bottom) {
                 VStack(spacing: Spacing.xs) {
                     if viewModel.isListening {

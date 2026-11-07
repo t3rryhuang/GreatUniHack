@@ -34,6 +34,7 @@ final class HomeViewModel {
             alerts = try await found
             if selectedDay == nil { selectedDay = weekAhead.first?.date }
             loadedVersion = model.dataVersion
+            await model.prepareQuest(predictions: weekAhead.first?.items ?? [])
         } catch {
             model.errorMessage = error.localizedDescription
         }

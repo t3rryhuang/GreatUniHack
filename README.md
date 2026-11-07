@@ -4,13 +4,34 @@ A personal spending prediction app for 20-somethings. NatWest Nova connects to y
 
 Built at **GreatUniHack 2026**, NatWest track: AI-powered financial inclusion and resilience.
 
-Nova is a native iOS app built with SwiftUI (`Nova/`), backed by a Python multi-LLM API (`test-backend/`). The iOS app currently runs on mock data behind a service layer, so it can be connected to the backend without changing any screens. See [CHANGES.md](CHANGES.md) for everything that changed from the original Prophit app.
+Nova is a native iOS app built with SwiftUI (`Nova/`), backed by a Python multi-LLM API (`test-backend/`) on Vercel. By default the app uses the backend for arenas, AI insights, chat and voice, and keeps everything else on the phone. Launch it with `-NovaOffline` to run fully on-device. See [CHANGES.md](CHANGES.md) for everything that changed from the original Prophit app.
+
+**Money Readiness** turns Nova into a path from 16 to a first real credit product: one character and one 0-1000 **Readiness Score**, plus a **Teen mode** for 16 and 17-year-olds with a money game, a shake-to-hear Piggy Bank and family loans. Under-16s are out of scope (that's NatWest's Rooster Money, a partnership idea only).
 
 > Hackathon concept. Not an official NatWest product.
 
 ---
 
 ## Features
+
+### Money Readiness (everyone)
+- **Readiness Score (0-1000)** from five stats, each 0-200 and each mirroring a real-world credit factor: **Reliability** (payment history), **Balance** (utilisation), **Endurance** (length of history), **Resilience** (affordability) and **Wisdom** (restraint and money skills). Ranks: Bronze, Silver, Gold, Platinum, Diamond. *This is a readiness score, not a credit score*: it's never shared with credit reference agencies and doesn't create or change a credit file.
+- **Character** drawn with SF Symbols that changes pose and badge with your rank, a score ring, stat bars with their real-world equivalent (tap one to see how to raise it), a 30-day chart and rank perks.
+- **Daily quest** from today's predictions ("Spend under £8 on transport today"), checked at the end of the day. Quests build a **streak**, and one **shield** a month covers a missed day ("Your shield saved your 21-day streak").
+- **Weekly boss:** the next bill due in the next 7 days. Pay it on time to defeat it.
+- Cards on Home and at the top of Profile.
+
+### Teen mode (16-17)
+Chosen from the date of birth at sign-up (optional; under-16s can't pick a date). On the 18th birthday the app moves to the full version with a one-off welcome; the score, streak and history carry over.
+- **Money Quest:** a game hub with 10 UK chapters of 2-3 minute levels (life events + quick questions, an explanation after every answer, unlimited retries, no timers). Everyone gets the same virtual £300 budget. Points are capped per day, chapter badges, and up to 3 new levels a day raise Wisdom. "Ask Nova about this" opens the teen chat with the topic filled in.
+- **Piggy Bank:** a savings pot with a goal suggested from your own income. **Shake the phone** to hear coins: the sound, haptics and animation grow with progress to *your* goal, never the £ amount. Add money from £1, a weekly **promise to myself**, an example matched bonus for reaching your goal, and "hide amount until I tap" (on by default).
+- **Family:** borrow from or share bills with any trusted adult (parent, carer, grandparent, key worker), from £1. The adult approves in the demo after a short delay. Every on-time payment raises Reliability, whatever the size.
+- **Borrowing sandbox** in the Simulator: "Borrow £200, repay over 3 months" with an example APR, the monthly cost and what one missed payment would do.
+- **Road to 18:** a countdown, a checklist (register to vote, bill streak, a month's buffer, the sandbox) and a one-page **Readiness Report** PDF you can share only after a consent switch.
+- **What your parent sees:** weekly totals, loan and bill progress, Piggy Bank % and safety alerts. Never individual transactions.
+- **Leagues** with friends and school, ranked by points and improvement only.
+- **Arenas** without money: Most Improved, Budget Guardian and Savings Sprint against your own baseline or target, with standings in % and ranks only.
+- **Ask Nova** never recommends credit products to teens and keeps answers short.
 
 ### Daily Predictions (Home)
 - Weather-aware spending predictions for Manchester
@@ -21,13 +42,13 @@ Nova is a native iOS app built with SwiftUI (`Nova/`), backed by a Python multi-
 
 ### Long Horizon Insights
 - Job quit runway: a ring showing how long your savings would last without income
-- Seasonal spending comparison (winter, spring, summer, autumn)
+- Seasonal spending comparison in pastel bars (winter, spring, summer, autumn), with your priciest season and the current one
 - Monthly spend trajectory with a projection line
-- Weekly recap with AI accuracy score (Pro)
+- Weekly recap with an accuracy ring and predicted vs actual, in soft pastels
 - This week vs last week, and top spending categories
 
 ### Spending History & Patterns
-- Week / Month / Year toggle (Month and Year are Pro)
+- Week / Month / Year toggle
 - This week vs last week comparison bars
 - Category breakdown donut chart (tap a slice for details)
 - Unusual spike alerts with merchant details
@@ -35,7 +56,7 @@ Nova is a native iOS app built with SwiftUI (`Nova/`), backed by a Python multi-
 
 ### Scenario Simulator
 - "What if I quit my job?" runway slider
-- What-if questions with suggestion chips: cut eating out by 50%, move somewhere cheaper, cycle to work, make coffee at home and more (1 free question, unlimited with Pro)
+- What-if questions with suggestion chips: cut eating out by 50%, move somewhere cheaper, cycle to work, make coffee at home and more
 - AI-generated budget tips from your spending patterns
 
 ### Arena: Social Savings in Pounds
@@ -45,6 +66,9 @@ Create or join savings challenges with friends. Stakes are in pounds (£) and he
 - **Budget Guardian:** stay under your spending target. The lowest spender under budget wins.
 - **Vice Streak:** avoid your vice category (coffee, dining, drinks, shopping, entertainment). The last one standing wins.
 - **Savings Sprint:** first to reach the savings target wins the pot. Can be settled early when someone crosses the line.
+- **Most Improved:** the biggest % cut in spending compared with your own previous period of the same length wins, so everyone starts level.
+
+Stakes are optional: with £0 nobody's money moves and the winner earns points and a badge. Teen arenas never use money.
 
 **Arena Flow:**
 1. Create an arena: name, mode, target (or vice), stake per person and end date
@@ -55,22 +79,51 @@ Create or join savings challenges with friends. Stakes are in pounds (£) and he
 
 ### Morning Briefing
 - Full-screen briefing with a time-of-day greeting, Manchester weather, expected spend, top prediction and a nudge
-- Read aloud with the built-in iOS voice (Pro), with play/pause and an animated sound wave
+- Read aloud (ElevenLabs voice, iOS voice as fallback), with play/pause and an animated sound wave
 
 ### AI Chat: "Ask Nova"
 - Conversational financial assistant that knows your spending summary
 - Voice input and a read-aloud toggle
 - Suggested questions and a 20-message conversation history
 
-### Pro Tier
-- Free tier with core predictions
-- Pro at **£1.99/month** with a 7-day free trial
-- Pro unlocks: full spending history, weekly recap, unlimited what-ifs, voice briefings, Ask Nova chat and creating arenas
+### Everything free
+- All features are unlocked for everyone: there's no paywall or free trial. The Pro code is kept (`AppModel.allFeaturesUnlocked`) so a paid plan could be switched back on later.
 
 ### Onboarding
+- Optional date of birth: 16 and 17-year-olds start in Teen mode
 - Bank selection: NatWest, Royal Bank of Scotland, Ulster Bank, and other UK banks
 - Upload a bank statement (JSON, CSV, PDF) or use 12 months of demo data
 - Guided connect flow with progress steps
+
+---
+
+### Nova Explorer: Manchester (Teen mode only)
+The 3D version of Money Quest. There is no entry point in Adult mode.
+- **3D voxel city** built entirely in code with RealityKit: the **Nancy Rothwell Building** (the hackathon venue: lobby, glass front, hackathon hall), **Piccadilly Gardens**, a **Metrolink stop** with a tram, the **Northern Quarter** market and the **Community Park** lot.
+- **Controls:** joystick, swipe to look, jump, talk/interact, third-person or first-person camera. The **Travel** menu lists every place and quest, so the game can be played without the joystick (VoiceOver users).
+- **Remi the stylist** greets you on first spawn and speaks with the ElevenLabs voice (the iOS voice offline). Describe your look by **push-to-talk** or chips; Remi updates your 3D avatar live until you tap "This is me". A manual editor is the fallback.
+- **Quests:** *The Budgeting Hackathon* (split £60 with sliders), *The Scam Spotter* (safe vs suspicious sponsor offers, including a money-mule trap), *The Tram Ticket Challenge* (single vs day vs weekly, with example fares), *Needs vs Wants Marketplace*. **Every existing Money Quest chapter** is hosted by an NPC in the city and plays the same levels.
+- **3D billboards** drawn from SwiftUI views: the next quest, the Community Park total, your Piggy Bank % and this week's event.
+- **Real-to-game sync:** reaching 25/50/75/100% of *your own* Piggy Bank goal and your saving streak give XP and Nova Coins (never based on £ amounts).
+- **Community Park:** a shared total on Upstash Redis. Each finished quest earns a park point; give up to 3 a day. The park grows from an empty lot to benches, trees, a fountain and a skatepark.
+- **Wardrobe and emotes:** spend coins on cosmetics (some unlocked by badges, never by money), wave, cheer or dance.
+
+## Fairness principles
+
+The score and the teen features are built so habits count and money doesn't:
+
+1. **F1, relative not absolute.** Limits, targets and resilience compare you with your own spending, income and goals.
+2. **F2, size doesn't matter.** A £1 bill, loan instalment or deposit counts exactly as much as a £100 one: Reliability is an on-time rate.
+3. **F3, no points for wealth or borrowing.** A bigger balance on its own, or borrowing more, never raises the score. Teens' Resilience is "weeks of your own essentials covered" (2 weeks = full marks).
+4. **F4, same game, same budget.** Money Quest gives everyone the same virtual budget, and right answers never depend on having money.
+5. **F5, private by default.** Leagues and teen arenas show points, % and ranks, never £. Parents see totals and %, not transactions.
+6. **F6, behaviour unlocks rewards.** Rank perks depend on rank (habits). The matched-savings bonus is fixed and the same for everyone (an example for the pitch, not a real offer).
+7. **F7, everyone can take part.** Any trusted adult can lend or share a bill; teens with nobody to borrow from can use a promise-to-myself transfer instead. Daily caps stop points being about free time.
+8. **F8, hardship protection.** If income drops by more than 30% month on month, goals are eased and the weekly limit follows the last 4 weeks, with a kind message.
+
+Nova Explorer follows the same principles: savings XP is relative to your own goal (F1, F3), every XP source shares one daily cap of 300 and park points are capped at 3 a day (F7), coins can't be bought (F3, F6), and everyone gets the same quests and budgets (F4).
+
+The DEBUG-only **Fairness check** (Profile > Demo) scores Teen A (about £15 a week pocket money) and Teen B (about £100 a week from a job) with the same habits side by side, plus Teen B with poor habits. Current result: **Teen A 681, Teen B 681, both Gold; Teen B with poor habits 328, Silver.**
 
 ---
 
@@ -84,8 +137,10 @@ Create or join savings challenges with friends. Stakes are in pounds (£) and he
 | Minimum iOS | 17.2 |
 | Architecture | MVVM: `@Observable` view models + protocol-based service layer |
 | Charts | Swift Charts |
-| Voice | AVSpeechSynthesizer (en-GB) |
-| Local storage | JSON files in Application Support (mock layer) |
+| Voice | ElevenLabs via the backend, AVSpeechSynthesizer (en-GB) as fallback |
+| Piggy Bank | AVAudioEngine (coin sounds synthesised in code), UIKit haptics, shake detection |
+| Report | ImageRenderer to PDF, ShareLink |
+| Local storage | JSON files in Application Support (on-device services) |
 
 ### Backend (`test-backend/`)
 | Layer | Technology |
@@ -130,25 +185,31 @@ The app supports Light and Dark Mode, Dynamic Type, VoiceOver and Reduce Motion.
 GreatUniHack/
 ├── Nova/                          # Native iOS app (SwiftUI)
 │   ├── Nova.xcodeproj
+│   ├── scripts/make_money_quest.py  # Writes Resources/MoneyQuest/chapters.json
 │   └── Nova/
-│       ├── App/                   # NovaApp, RootView, AppModel (shared state)
-│       ├── DesignSystem/          # Colours, spacing, type, buttons, cards
-│       ├── Models/                # Transaction, FinancialSummary, Predictions, Arena, User
+│       ├── App/                   # NovaApp, RootView, AppModel (shared state), DEBUG screen launcher
+│       ├── DesignSystem/          # Colours (incl. pastels), spacing, type, buttons, cards
+│       ├── Models/                # Transaction, Arena, Readiness (+ ReadinessRules), Family,
+│       │                          # MoneyQuest, PiggyBank, League, LifeStage, DemoProfile
 │       ├── Services/
-│       │   ├── Protocols/         # One protocol per backend area. The UI only uses these
-│       │   ├── Mock/              # Mock implementations used today
-│       │   └── ServiceContainer.swift
+│       │   ├── Protocols/         # One protocol per area. The UI only uses these
+│       │   ├── Remote/            # Backend implementations (arenas, insights, chat, voice)
+│       │   ├── Mock/              # On-device implementations and demo data
+│       │   └── ServiceContainer.swift  # .live(baseURL:) and .mock()
 │       ├── ViewModels/            # One @Observable view model per screen
-│       ├── Views/                 # Home, Insights, History, Arena, Simulator, Profile,
-│       │                          # Chat, Briefing, Onboarding, Auth, Upgrade, Transactions
-│       └── Resources/             # Assets.xcassets (app icon, NatWest logo, accent colour)
+│       ├── Views/                 # Home, Insights, History, Arena, Simulator, Profile, Readiness,
+│       │                          # Family, Parent, Graduation, MoneyQuest, PiggyBank, Demo, ...
+│       └── Resources/             # Assets.xcassets, MoneyQuest/chapters.json
 ├── test-backend/                  # FastAPI + Gradio backend
-│   ├── main.py
-│   ├── ui.py
+│   ├── main.py                    # App, Gradio UI, original endpoints
+│   ├── nova_api.py                # /nova JSON API for the iOS app
+│   ├── arena.py                   # /arenas API (Upstash Redis)
+│   ├── llm.py                     # LLM calls (Runware or native keys)
+│   ├── tests/                     # pytest
 │   ├── api/index.py               # Vercel entrypoint
 │   └── requirements.txt
 ├── docs/                          # NatWest brand guide + Apple design guide
-├── CHANGES.md                     # Everything that changed from the original app
+├── CHANGES.md                     # Everything that changed
 └── README.md
 ```
 
@@ -160,14 +221,14 @@ GreatUniHack/
 
 **Requirements:** a Mac with Xcode 27.2 or later and the iOS 27.2 Simulator runtime (Xcode → Settings → Components).
 
-**Run in the Simulator (iPhone 15 Pro Max):**
+**Run in the Simulator (iPhone 15 Pro Max or iPhone 17 Pro Max):**
 
 1. Open the project:
    ```bash
    open Nova/Nova.xcodeproj
    ```
-2. In the Xcode toolbar, pick the **Nova** scheme and the **iPhone 15 Pro Max** simulator.
-   If it isn't listed: Window → Devices and Simulators → Simulators → **+**, then choose iPhone 15 Pro Max.
+2. In the Xcode toolbar, pick the **Nova** scheme and the **iPhone 15 Pro Max** or **iPhone 17 Pro Max** simulator.
+   If it isn't listed: Window → Devices and Simulators → Simulators → **+**, then choose iPhone 15 Pro Max or iPhone 17 Pro Max.
 3. Press **⌘R**.
 
 Or from the command line:
@@ -175,9 +236,10 @@ Or from the command line:
 cd Nova
 xcodebuild -project Nova.xcodeproj -scheme Nova \
   -destination 'platform=iOS Simulator,name=iPhone 15 Pro Max' build
+# or: -destination 'platform=iOS Simulator,name=iPhone 17 Pro Max'
 ```
 
-**Run on a real iPhone 15 Pro Max:**
+**Run on a real iPhone 15 Pro Max or iPhone 17 Pro Max:**
 
 1. Connect the iPhone with a cable, unlock it and tap **Trust**.
 2. On the iPhone, turn on **Developer Mode** (Settings → Privacy & Security → Developer Mode) and restart when asked.
@@ -187,11 +249,28 @@ xcodebuild -project Nova.xcodeproj -scheme Nova \
 
 **Using the demo:**
 
-- Sign in with any email and a password of 6 or more characters.
-- Pick a bank and tap **Use demo data** (12 months of Manchester spending), or upload a JSON, CSV or PDF statement.
-- To try Pro, tap **Start free trial** and use the test card `4242 4242 4242 4242` with any future expiry and CVC. `4000 0000 0000 0002` shows a declined card.
-- Join an arena with the demo codes `246810` or `135790`.
+- Sign in with any email and a password of 6 or more characters. Add a date of birth to start in Teen mode, or skip it.
+- Pick a bank and tap **Use demo data**, or upload a JSON, CSV or PDF statement.
+- **Profile > Demo** switches between **Adult**, **Teen A** and **Teen B** (same habits, different money) and has **Complete today's quest**, **Simulate 18th birthday** (Teen mode) and the DEBUG **Fairness check**.
+- Join an arena with the demo codes `246810` or `135790` (adult, with stakes) or `112233` (teen, no money).
+- **Shake** the Piggy Bank: in the Simulator use **Device > Shake** (or tap the Shake button).
 - Profile is the avatar button at the top right of every tab.
+
+**Launch arguments** (Xcode > Product > Scheme > Edit Scheme > Arguments):
+
+| Argument | What it does |
+|---|---|
+| `-NovaOffline` | Everything on-device (no backend) |
+| `-NovaDemo` | Skip sign-in as Alex (adult) with demo data |
+| `-NovaTeenDemo` | Start as Jamie, 17 (Teen B) |
+| `-NovaTeenADemo` | Start as Riley, 16 (Teen A) |
+| `-NovaBackendURL http://localhost:8000` | Use a local backend |
+| `-NovaScreen <name>` | DEBUG: open a screen at launch: `readiness`, `family`, `parent`, `graduation`, `report`, `quest`, `level`, `piggy`, `league`, `fairness`, `seasons`, `insights`, `arena`, `simulator`, `chat`, `profile` |
+| `-NovaAutoplay` / `-NovaAutoShake` | DEBUG: play a Money Quest level / shake the Piggy Bank automatically |
+| `-NovaWalkthrough` | DEBUG: tour the main screens automatically for about a minute (teen or adult), scrolling each one |
+| `-NovaScreen explorer` | DEBUG: open Nova Explorer (Teen mode). Add `-NovaExplorerTour` to walk through every zone, `-NovaExplorerSpot venue\|piccadilly\|tramStop\|northernQuarter\|park` to start somewhere else, or `-NovaExplorerOpen budget\|scam\|tram\|market\|park\|billboard\|wardrobe\|travel\|stylist` to open a panel |
+
+**2-minute demo:** launch with `-NovaTeenDemo` → Home shows Jamie's Readiness Score, daily quest, weekly boss, Money Quest and Piggy Bank → open the Piggy Bank and shake → play chapter 7 level 1 (money mules) → Profile > Demo > Fairness check (Teen A and Teen B both 681) → Road to 18 and the Readiness Report → Profile > Demo > Simulate 18th birthday.
 
 ### Backend Setup (local dev only)
 
@@ -235,26 +314,47 @@ Alternatively, without the GitHub integration: `cd test-backend && npx vercel --
 
 ## Connecting the iOS app to the backend
 
-The iOS app talks only to the protocols in `Nova/Nova/Services/Protocols/ServiceProtocols.swift`. Today each one has a mock implementation in `Services/Mock/`.
+The iOS app talks only to the protocols in `Nova/Nova/Services/Protocols/ServiceProtocols.swift`. `ServiceContainer.live(baseURL:)` is used by default and `.mock()` with `-NovaOffline`.
 
-| Protocol | Covers | Backend endpoint |
-|---|---|---|
-| `TransactionServicing` | Load, import (JSON/CSV/PDF), add, delete, clear | `/analyse_uploaded` (file parsing) |
-| `InsightsServicing` | Week-ahead predictions, briefing, alerts, recap, runway, tips, what-ifs | `/calendar_uploaded`, `/get_runway`, `/_runway_summary_from_file`, `/get_tips` |
-| `ChatServicing` | Ask Nova replies | Chat LLM (to add) |
-| `VoiceServicing` | Read aloud, voice input | iOS voice today; speech-to-text to add |
-| `AuthServicing` | Sign in, sign up, sign out | Auth provider (to add) |
-| `ArenaServicing` | Create, join, sync, settle arenas | Arena API (to add) |
-| `SavingsServicing` | Savings account for stakes and prize pots | NatWest account API (to add) |
-| `SubscriptionServicing` | Free / Pro plan and trial | Payments (to add) |
-
-To connect, write a class that conforms to a protocol (for example `APIInsightsService` calling `/calendar_uploaded`), add it to a `ServiceContainer`, and pass that container in `NovaApp.swift` instead of `.mock()`. No views or view models need to change.
+| Protocol | Covers | Live | Offline |
+|---|---|---|---|
+| `InsightsServicing` | Week-ahead, briefing, alerts, recap, runway, tips, what-ifs, weather | `RemoteInsightsService` (`/nova/*`, falls back on-device) | `MockInsightsService` |
+| `ChatServicing` | Ask Nova (adult or teen stage) | `RemoteChatService` (`/nova/chat`) | `MockChatService` |
+| `VoiceServicing` | Read aloud, voice input | `ElevenLabsVoiceService` (`/nova/tts`, `/nova/transcribe`) | `SystemVoiceService` |
+| `ArenaServicing` | Create, join, sync, settle arenas | `RemoteArenaService` (`/arenas`) | `MockArenaService` |
+| `AuthServicing`, `TransactionServicing`, `SavingsServicing`, `SubscriptionServicing` | Session, transactions, savings account and Piggy Bank, plan | On-device | On-device |
+| `ReadinessServicing` | Readiness Score, quests, streak, shields, Wisdom | `LocalReadinessService` | same |
+| `FamilyServicing` | Family loans and shared bills | `LocalFamilyService` | same |
+| `GameServicing` | Money Quest points, badges, levels | `LocalGameService` | same |
+| `LeagueServicing` | Friend and school leagues | `LocalLeagueService` (demo data) | same |
+| `ExplorerServicing` | Nova Explorer save game (avatar, XP, coins, quests, cosmetics) | `LocalExplorerService` | same |
+| `StylistServicing` | Remi the stylist | `RemoteStylistService` (`/explorer/stylist`, falls back on-device) | `MockStylistService` |
+| `CommunityParkServicing` | Shared Community Park total | `RemoteCommunityParkService` (`/explorer/park`) | `MockCommunityParkService` |
 
 ---
 
 ## Backend API
 
-Production base URL: `https://your-project.vercel.app`
+Production base URL: `https://nova-backend-silk.vercel.app`
+
+### Nova JSON API (used by the iOS app)
+
+| Endpoint | Purpose |
+|---|---|
+| `POST /nova/chat` | Ask Nova. Optional `stage`: `"teen"` or `"adult"` (default). Teen replies never recommend credit products |
+| `POST /nova/tts`, `POST /nova/transcribe` | ElevenLabs read-aloud and speech-to-text |
+| `POST /nova/week-ahead`, `/nova/budget-tips`, `/nova/runway`, `/nova/what-if`, `GET /nova/weather` | AI insights and live weather |
+| `GET/POST /arenas`, `GET /arenas/code/{code}`, `POST /arenas/join`, `GET /arenas/{id}`, `POST /arenas/{id}/sync`, `POST /arenas/{id}/settle` | Shared arenas. Modes include `most_improved`; `teen: true` arenas use each member's `baselineSpend` / `personalTarget` |
+
+### Nova Explorer API
+
+| Endpoint | Purpose |
+|---|---|
+| `POST /explorer/stylist` | `{message, look, history}` → `{reply, patch, confirm, source}`. Input max 500 characters (trimmed to 200); emails, phone numbers, postcodes and links get a privacy reply; the LLM can only choose catalogue values (others are dropped); replies are capped at 240 characters with links removed. Falls back to keyword rules without an LLM key |
+| `GET /explorer/park` | `{total, contributors}` |
+| `POST /explorer/park/contribute` | `{points: 1-3}` with `X-User-Id`. Max 3 points per player per day (429 after that); players are stored only as a salted SHA-256 hash |
+
+### Gradio API (original endpoints)
 
 All endpoints follow the Gradio async pattern:
 
@@ -325,7 +425,10 @@ This maps to the iOS `DayPrediction` / `PredictionItem` models (`likelihood` →
    - **Budget Guardian:** the member with the lowest spend under target wins; if everyone went over, the last to go over wins
    - **Vice Streak:** members who avoided their vice win over those who didn't; among those who slipped, the last to slip wins
    - **Savings Sprint:** the first member to reach the target wins; if nobody did, the highest saver wins
-5. The prize pot is paid into the winner's savings account, and the results screen shows the payment reference
+   - **Most Improved:** the biggest % cut versus your own previous period of the same length wins; ties go to the lower current spend, then name
+5. The prize pot is paid into the winner's savings account, and the results screen shows the payment reference. With a £0 stake nothing moves and the winner earns points and a badge.
+
+**Teen arenas** (`teen: true`): Budget Guardian ranks by % under each member's own limit (their own previous spending), Savings Sprint by progress to each member's own target (10% of their own income over the arena), and ties are broken by name, never by £. The same rules are in `ArenaRules` (Swift, offline) and `arena.py` (backend).
 
 ---
 
@@ -333,11 +436,39 @@ This maps to the iOS `DayPrediction` / `PredictionItem` models (`likelihood` →
 
 | Variable | Where | Purpose |
 |---|---|---|
-| `ANTHROPIC_API_KEY` | `test-backend/.env` | Claude API |
-| `GEMINI_API_KEY` | `test-backend/.env` | Gemini API |
-| `OPENAI_API_KEY` | `test-backend/.env` | OpenAI API |
+| `RUNWARE_API_KEY` | `test-backend/.env` | One key for Claude, Gemini and GPT (preferred) |
+| `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`, `OPENAI_API_KEY` | `test-backend/.env` | Native keys if Runware isn't set |
+| `ELEVENLABS_API_KEY` (and optional `ELEVENLABS_VOICE_ID`) | `test-backend/.env` | Read-aloud and speech-to-text |
+| `KV_REST_API_URL`, `KV_REST_API_TOKEN` | Vercel (Upstash integration) | Arena storage; without them arenas are kept in memory |
 | `USER_LAT`, `USER_LON`, `USER_COUNTRY`, `USER_SUBDIVISION` | `test-backend/.env` | Location for weather and holidays (optional) |
 
-The iOS app needs no environment variables while it uses mock data.
+The iOS app needs no environment variables.
+
+### Backend tests
+
+```bash
+cd test-backend
+uv venv --python 3.12 .venv   # or python3.12 -m venv .venv
+uv pip install --python .venv/bin/python -r requirements-dev.txt
+.venv/bin/python -m pytest -q
+```
+
+The arena and chat tests use in-memory storage and a stand-in for the LLM, so they need no keys or Redis.
 
 Never commit `.env` files. They are in `.gitignore`.
+
+## Nova Explorer: architecture, privacy and parents
+
+- **3D engine:** RealityKit `ARView` in non-AR mode inside SwiftUI (`ExplorerSceneView`). It works on iOS 13+, so no iOS 18 gate is needed. All geometry is generated in code (`VoxelBuilder` merges boxes of one colour into one mesh); billboards and name tags are SwiftUI views rendered with `ImageRenderer` into RealityKit textures. No model, texture or sound files.
+- **Code layout:** pure rules in `Models/Explorer/` (`AvatarLook` catalogue and `StylistGuard`, `StylistRules`, `ExplorerEconomy`, `ExplorerQuestRules`, `ParkStage`, `CosmeticCatalogue`); game state in `ExplorerViewModel`; the scene in `Views/Explorer/ExplorerScene.swift`; city geometry in `ManchesterWorld.swift`.
+- **Privacy:** the save game stays on the phone. The only data sent is what you say to Remi (screened for personal details on the phone and the server) and anonymous park points (a hashed id). There's no chat with other players and no names are shared. Remi never asks for personal details.
+- **Parents:** the existing "What your parent sees" preview is unchanged; the game shows no money amounts. Explorer only appears in Teen mode, and a parent can switch it off by turning Teen mode off.
+- **Offline:** with `-NovaOffline` (or no connection) Remi uses on-device rules, read-aloud uses the iOS voice, and the park uses a local total.
+
+## Screenshots
+
+Nova Explorer screenshots and a 45-second tour recording are in [docs/screenshots/explorer](docs/screenshots/explorer).
+
+One-minute app walkthroughs (recorded with `-NovaWalkthrough`, which drives the app through its main screens): [Teen mode](docs/screenshots/walkthrough/teen-walkthrough.mp4) and [Adult mode](docs/screenshots/walkthrough/adult-walkthrough.mp4).
+
+Pitch screenshots (iPhone 17 Pro Max simulator) are in [docs/screenshots](docs/screenshots): Teen Home, Readiness, Money Quest hub, a level and its summary, the Piggy Bank (light, dark and Teen A at 80%), the fairness check, Family, the borrowing sandbox, Road to 18, the Readiness Report, the parent preview, leagues, teen arenas, the pastel Insights cards and a level at the largest text size.

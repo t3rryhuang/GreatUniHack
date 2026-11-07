@@ -90,3 +90,19 @@ async def smembers(key: str) -> list[str]:
     if backend() == "memory":
         return list(_memory.get(key, ()))  # type: ignore[arg-type]
     return await _redis("SMEMBERS", key) or []
+
+
+async def incrby(key: str, amount: int, ttl: int | None = None) -> int:
+    """Atomically adds to an integer counter and returns the new value."""
+    if backend() == "memory":
+        if not _mem_alive(key):
+            _memory.pop(key, None)
+        value = int(_memory.get(key, 0)) + amount  # type: ignore[arg-type]
+        _memory[key] = str(value)
+        if ttl and key not in _expiry:
+            _expiry[key] = time.time() + ttl
+        return value
+    value = int(await _redis("INCRBY", key, str(amount)))
+    if ttl:
+        await _redis("EXPIRE", key, str(ttl), "NX")
+    return value

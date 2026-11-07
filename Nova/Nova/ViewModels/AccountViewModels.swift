@@ -38,11 +38,24 @@ final class LoginViewModel {
 @Observable
 final class OnboardingViewModel {
     enum Step: Int, CaseIterable {
-        case welcome, bank, data, connecting
+        case welcome, age, bank, data, connecting
     }
 
     var step: Step = .welcome
     var bank: Bank = .natwest
+    /// Optional. 16 and 17-year-olds start in Teen mode; under-16s can't pick a date.
+    var dateOfBirth = Calendar.current.date(byAdding: .year, value: -20, to: .now) ?? .now
+    var shareDateOfBirth = true
+
+    /// Latest date of birth allowed: 16 years ago today.
+    static var latestDateOfBirth: Date { Calendar.current.date(byAdding: .year, value: -16, to: .now) ?? .now }
+
+    var stagePreview: LifeStage { shareDateOfBirth ? LifeStage.from(dateOfBirth: dateOfBirth) : .adult }
+
+    func saveAge(model: AppModel) async {
+        await model.setDateOfBirth(shareDateOfBirth ? dateOfBirth : nil)
+        step = .bank
+    }
     private(set) var progressText = ""
     var errorMessage: String?
 

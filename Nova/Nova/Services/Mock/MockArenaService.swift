@@ -4,7 +4,12 @@ import Foundation
 /// NatWest savings account through `SavingsServicing`.
 final class MockArenaService: ArenaServicing {
     /// Codes that can be joined in demo mode.
-    static let demoJoinCodes = ["246810", "135790"]
+    static let demoJoinCodes = ["246810", "135790", "112233"]
+
+    /// Demo codes that fit a life stage (teens only see arenas without money).
+    static func demoJoinCodes(for stage: LifeStage) -> [String] {
+        stage == .teen ? ["112233"] : demoJoinCodes
+    }
 
     private let storeName = "arenas.json"
     private let savings: SavingsServicing
@@ -27,16 +32,17 @@ final class MockArenaService: ArenaServicing {
     func myArenas() async throws -> [Arena] {
         await simulateLatency(400)
         if arenas.isEmpty {
-            arenas = MockDataFactory.demoArenas(currentUser: try me)
+            let user = try me
+            arenas = MockDataFactory.demoArenas(currentUser: user, stage: user.stage)
             persist()
         }
         return arenas.sorted { ($0.status == .completed ? 1 : 0, $0.endDate) < ($1.status == .completed ? 1 : 0, $1.endDate) }
     }
 
-    func create(name: String, mode: ArenaMode, target: Double, stake: Double, vice: SpendingCategory?, endDate: Date) async throws -> Arena {
+    func create(name: String, mode: ArenaMode, target: Double, stake: Double, vice: SpendingCategory?, endDate: Date, teen: Bool) async throws -> Arena {
         let user = try me
         let code = String(format: "%06d", Int.random(in: 100_000...999_999))
-        _ = try await savings.withdrawStake(stake, reference: "ARENA \(code)")
+        if stake > 0 { _ = try await savings.withdrawStake(stake, reference: "ARENA \(code)") }
         let arena = Arena(
             name: name,
             mode: mode,
@@ -47,7 +53,8 @@ final class MockArenaService: ArenaServicing {
             endDate: endDate,
             joinCode: code,
             status: .pending,
-            members: [ArenaMember(name: user.name, isCurrentUser: true, lastSyncedAt: .now)]
+            members: [ArenaMember(name: user.name, isCurrentUser: true, lastSyncedAt: .now)],
+            teen: teen ? true : nil
         )
         arenas.insert(arena, at: 0)
         persist()
@@ -64,7 +71,7 @@ final class MockArenaService: ArenaServicing {
     func join(code: String) async throws -> Arena {
         let user = try me
         var arena = try await preview(code: code)
-        _ = try await savings.withdrawStake(arena.stakeAmount, reference: "ARENA \(code)")
+        if arena.stakeAmount > 0 { _ = try await savings.withdrawStake(arena.stakeAmount, reference: "ARENA \(code)") }
         arena.members.append(ArenaMember(name: user.name, isCurrentUser: true, lastSyncedAt: .now))
         arena.status = .active
         arenas.insert(arena, at: 0)
@@ -76,35 +83,37 @@ final class MockArenaService: ArenaServicing {
         await simulateLatency(700)
         guard let index = arenas.firstIndex(where: { $0.id == arenaID }) else { throw ServiceError.invalidJoinCode }
         var arena = arenas[index]
-        let inPeriod = transactions.filter { $0.date >= arena.startDate && $0.date <= min(arena.endDate, .now) }
+        let mine = ArenaRules.progress(for: arena, transactions: transactions)
 
         for i in arena.members.indices {
             if arena.members[i].isCurrentUser {
                 switch arena.mode {
                 case .budgetGuardian:
-                    let spend = inPeriod.filter { $0.isExpense && ![.rent, .transfer, .utilities].contains($0.category) }
-                        .reduce(0) { $0 + $1.spend }
-                    arena.members[i].currentSpend = max(arena.members[i].currentSpend, spend)
+                    arena.members[i].currentSpend = max(arena.members[i].currentSpend, mine.spend)
+                    if let baseline = mine.baseline { arena.members[i].baselineSpend = baseline }
                 case .viceStreak:
-                    let vice = arena.viceCategory ?? .coffee
-                    arena.members[i].currentSpend = inPeriod.filter { $0.category == vice && $0.isExpense }.reduce(0) { $0 + $1.spend }
+                    arena.members[i].currentSpend = mine.spend
                 case .savingsSprint:
-                    let saved = inPeriod.filter { $0.category == .transfer && $0.isExpense }.reduce(0) { $0 + $1.spend }
-                    arena.members[i].currentSavings = max(arena.members[i].currentSavings, saved)
+                    arena.members[i].currentSavings = max(arena.members[i].currentSavings, mine.savings)
+                    if let target = mine.personalTarget { arena.members[i].personalTarget = target }
+                case .mostImproved:
+                    arena.members[i].currentSpend = mine.spend
+                    if let baseline = mine.baseline { arena.members[i].baselineSpend = baseline }
                 }
             } else if arena.status != .completed {
                 // Friends' spending drifts a little each sync, so the demo feels live.
-                arena.members[i].currentSpend += arena.mode == .viceStreak ? 0 : Double.random(in: 0...12)
+                arena.members[i].currentSpend += arena.mode == .viceStreak ? 0 : Double.random(in: 0...(arena.mode == .mostImproved ? 6 : 12))
                 arena.members[i].currentSavings += arena.mode == .savingsSprint ? Double.random(in: 0...15) : 0
             }
 
             let member = arena.members[i]
-            let over = arena.mode != .savingsSprint && member.currentSpend > arena.targetAmount
+            let over = ArenaRules.hasSpendingLimit(arena.mode) && member.currentSpend > ArenaRules.limit(for: member, in: arena)
             if over && member.exceededAt == nil {
                 arena.members[i].exceededAt = .now
                 if arena.mode == .viceStreak { arena.members[i].isEliminated = true }
             }
-            if arena.mode == .savingsSprint && member.currentSavings >= arena.targetAmount && member.targetReachedAt == nil {
+            let reached = arena.isTeenArena ? (member.ownTargetProgress ?? 0) >= 1 : member.currentSavings >= arena.targetAmount
+            if arena.mode == .savingsSprint && reached && member.targetReachedAt == nil {
                 arena.members[i].targetReachedAt = .now
             }
             arena.members[i].lastSyncedAt = .now
@@ -122,7 +131,7 @@ final class MockArenaService: ArenaServicing {
         let standings = ArenaRules.standings(for: arena)
         let winner = standings.first
         let reference = "NW-ARENA-\(arena.joinCode)-\(Int(Date.now.timeIntervalSince1970) % 100_000)"
-        if winner?.isCurrentUser == true {
+        if winner?.isCurrentUser == true, arena.prizePot > 0 {
             _ = try await savings.depositPayout(arena.prizePot, reference: reference)
         }
         arena.status = .completed
@@ -130,6 +139,12 @@ final class MockArenaService: ArenaServicing {
         arenas[index] = arena
         persist()
         return ArenaSettlement(arenaID: arena.id, winner: winner, standings: standings, payout: arena.prizePot, reference: reference, settledAt: .now)
+    }
+
+    func resetDemo(profile: DemoProfile) async {
+        guard let user = auth.currentUser else { return }
+        arenas = MockDataFactory.demoArenas(currentUser: user, stage: profile.stage)
+        persist()
     }
 
     private func persist() { LocalStore.save(arenas, to: storeName) }
@@ -151,6 +166,15 @@ final class MockArenaService: ArenaServicing {
                 startDate: start, endDate: calendar.date(byAdding: .day, value: 20, to: .now) ?? .now,
                 joinCode: code, status: .active,
                 members: [ArenaMember(name: "Sam Hughes"), ArenaMember(name: "Aisha Rahman"), ArenaMember(name: "Jack Murphy")]
+            )
+        case "112233":
+            return Arena(
+                name: "Weekend Spend-Off", mode: .mostImproved, targetAmount: 0, stakeAmount: 0,
+                startDate: start, endDate: calendar.date(byAdding: .day, value: 12, to: .now) ?? .now,
+                joinCode: code, status: .active,
+                members: [ArenaMember(name: "Maya Ahmed", currentSpend: 18, baselineSpend: 30),
+                          ArenaMember(name: "Leo Byrne", currentSpend: 22, baselineSpend: 26)],
+                teen: true
             )
         default:
             return nil

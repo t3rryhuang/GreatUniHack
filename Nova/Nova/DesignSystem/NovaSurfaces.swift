@@ -123,12 +123,23 @@ struct NovaScreen<Content: View>: View {
     @ViewBuilder var content: Content
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: Spacing.md) {
-                content
+        ScrollViewReader { proxy in
+            ScrollView {
+                VStack(alignment: .leading, spacing: Spacing.md) {
+                    content
+                    Color.clear.frame(height: 1).id("nova-bottom")
+                }
+                .padding(.horizontal, Spacing.md)
+                .padding(.bottom, Spacing.xl)
             }
-            .padding(.horizontal, Spacing.md)
-            .padding(.bottom, Spacing.xl)
+            #if DEBUG
+            .task {
+                // -NovaWalkthrough: scroll each screen slowly to the bottom for screen recordings.
+                guard ProcessInfo.processInfo.arguments.contains("-NovaWalkthrough") else { return }
+                try? await Task.sleep(for: .seconds(1.6))
+                withAnimation(.easeInOut(duration: 3)) { proxy.scrollTo("nova-bottom", anchor: .bottom) }
+            }
+            #endif
         }
         .background(NovaColor.page.ignoresSafeArea())
         .scrollDismissesKeyboard(.interactively)

@@ -13,6 +13,7 @@ import logging
 import os
 import re
 from datetime import date, timedelta
+from typing import Literal
 
 import httpx
 from fastapi import APIRouter, File, HTTPException, UploadFile
@@ -75,6 +76,8 @@ class ChatRequest(BaseModel):
     message: str
     history: list[ChatTurn] = []
     summary: Summary
+    # "teen" (16-17) or "adult". Defaults to adult so older clients keep working.
+    stage: Literal["teen", "adult"] = "adult"
 
 
 class SummaryRequest(BaseModel):
@@ -141,6 +144,14 @@ If asked something unrelated to money, gently steer back to their finances.
 
 User's financial summary: {summary}"""
 
+CHAT_TEEN_RULES = """
+
+The user is 16 or 17 and is in Nova's Teen mode. Extra rules:
+- Never recommend or suggest credit products, credit cards, loans, overdrafts or buy now pay later. If asked, say you can't recommend them and suggest saving or the app's practice borrowing sandbox instead.
+- Focus on saving, bills, first wages and payslips, and their Readiness Score.
+- The Readiness Score is not a credit score; never say it creates or changes a credit file.
+- Keep answers to 1-3 short, friendly, age-appropriate sentences. No gambling words."""
+
 
 @router.post("/chat")
 async def chat(req: ChatRequest):
@@ -151,7 +162,10 @@ async def chat(req: ChatRequest):
     while msgs and msgs[0]["role"] != "user":
         msgs.pop(0)
     try:
-        reply = await llm.claude(msgs, max_tokens=400, system=CHAT_SYSTEM.format(summary=_summary_text(req.summary)))
+        system = CHAT_SYSTEM.format(summary=_summary_text(req.summary))
+        if req.stage == "teen":
+            system += CHAT_TEEN_RULES
+        reply = await llm.claude(msgs, max_tokens=300 if req.stage == "teen" else 400, system=system)
     except Exception as e:
         logger.exception("chat failed")
         raise HTTPException(status_code=502, detail=f"Chat failed: {e}")
@@ -572,7 +586,7 @@ def _condition(code: int, temp: float, wind: float) -> str:
 IMPACT = {
     "rain": "Rainy days usually mean more Uber trips and food delivery.",
     "drizzle": "Drizzly days usually mean more Uber trips and food delivery.",
-    "sunny": "Sunny days usually mean more pub and park spending.",
+    "sunny": "Sunny days usually mean more spending out and about.",
     "cold": "Cold days push up coffee and heating costs.",
     "wind": "A normal day for your spending.",
     "cloudy": "A normal day for your spending.",

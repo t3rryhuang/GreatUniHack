@@ -6,6 +6,8 @@ struct UserProfile: Codable, Hashable, Sendable {
     var email: String
     var bank: Bank = .natwest
     var memberSince: Date = .now
+    /// Optional, so profiles saved by older builds still load. Drives `stage`.
+    var dateOfBirth: Date?
 
     var firstName: String { name.split(separator: " ").first.map(String.init) ?? name }
 }
@@ -33,6 +35,8 @@ struct SavingsAccount: Codable, Hashable, Sendable {
     var balance: Double
     var interestRate: Double
     var activity: [SavingsActivity]
+    /// Teen-mode Piggy Bank pot. Optional, so accounts saved by older builds still load.
+    var piggy: PiggyBank?
 
     var maskedNumber: String { "•••• " + accountNumber.suffix(4) }
 }

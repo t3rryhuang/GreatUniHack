@@ -140,9 +140,11 @@ app.add_middleware(
 
 import arena  # noqa: E402
 import nova_api  # noqa: E402
+import explorer  # noqa: E402
 
 app.include_router(arena.router)
 app.include_router(nova_api.router)
+app.include_router(explorer.router)
 
 MAX_TRANSACTIONS = 200
 MAX_LINES = 4000

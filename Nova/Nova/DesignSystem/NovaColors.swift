@@ -64,6 +64,18 @@ enum NovaColor {
     static let chartYolk = Color(light: 0x9E7207, dark: 0xFDD166)
     static let chartChampion = Color(light: 0x5A287D, dark: 0xCDAFF3)
     static let chartGrey = Color(light: 0x9A9A9A, dark: 0x6C6C6C)
+
+    // MARK: Pastels (soft chart fills)
+    // Mid-tone, so bars stand out from the card for people with low vision or colour
+    // blindness. Colour is never the only cue: every bar also has an icon or a label,
+    // and text on a pastel uses `heading`.
+
+    static let pastelBlue = Color(light: 0x9DBFEC, dark: 0x3A5C8C)
+    static let pastelGreen = Color(light: 0x9ED2AB, dark: 0x356B45)
+    static let pastelYellow = Color(light: 0xEFCB6A, dark: 0x7A6124)
+    static let pastelPeach = Color(light: 0xF2AC8A, dark: 0x7D4530)
+    static let pastelLilac = Color(light: 0xC6ADEC, dark: 0x58437A)
+    static let pastelPink = Color(light: 0xEFA9C4, dark: 0x773954)
 }
 
 extension Color {

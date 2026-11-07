@@ -1,0 +1,1905 @@
+{
+  "version": 1,
+  "facts": [
+    {
+      "id": "niNumber",
+      "text": "Most young people get their National Insurance number by letter shortly before they turn 16.",
+      "source": "HMRC / gov.uk",
+      "verifyBeforeDemo": true,
+      "year": 2026
+    },
+    {
+      "id": "personalAllowance",
+      "text": "Most people can earn some money each tax year before paying Income Tax (the Personal Allowance). Check gov.uk for this year's amount.",
+      "source": "gov.uk",
+      "verifyBeforeDemo": true,
+      "year": 2026
+    },
+    {
+      "id": "taxCode",
+      "text": "Your tax code tells your employer how much tax-free pay you get. If it looks wrong, contact HMRC.",
+      "source": "gov.uk",
+      "verifyBeforeDemo": true,
+      "year": 2026
+    },
+    {
+      "id": "creditFileAge",
+      "text": "You usually can't take out credit until you're 18, so most credit files start around then.",
+      "source": "Credit reference agencies",
+      "verifyBeforeDemo": true,
+      "year": 2026
+    },
+    {
+      "id": "electoralRegister",
+      "text": "Lenders use the electoral register to confirm who you are and where you live. The age you can register and vote differs across the UK nations, so check gov.uk/register-to-vote.",
+      "source": "gov.uk",
+      "verifyBeforeDemo": true,
+      "year": 2026
+    },
+    {
+      "id": "missedPayments",
+      "text": "Missed payments usually stay on a credit file for six years.",
+      "source": "Credit reference agencies",
+      "verifyBeforeDemo": true,
+      "year": 2026
+    },
+    {
+      "id": "paydayCap",
+      "text": "In the UK the total interest and fees on a payday loan are capped at the amount you borrowed, but they're still a very expensive way to borrow.",
+      "source": "FCA",
+      "verifyBeforeDemo": true,
+      "year": 2026
+    },
+    {
+      "id": "bnplCredit",
+      "text": "Buy now pay later is borrowing. Missing payments can mean late fees and, with some providers, a mark on your credit file.",
+      "source": "FCA / MoneyHelper",
+      "verifyBeforeDemo": true,
+      "year": 2026
+    },
+    {
+      "id": "fraudLine",
+      "text": "If you think a call or message about your bank is a scam, hang up and call 159 to reach your bank safely. Not every bank uses 159, so you can also use the number on the back of your card.",
+      "source": "Stop Scams UK",
+      "verifyBeforeDemo": true,
+      "year": 2026
+    },
+    {
+      "id": "reportFraud",
+      "text": "Report fraud to your bank straight away, then to the police's fraud reporting service for your part of the UK.",
+      "source": "Police / gov.uk",
+      "verifyBeforeDemo": true,
+      "year": 2026
+    },
+    {
+      "id": "moneyMule",
+      "text": "Letting someone move money through your account is money muling. It's a crime, even if you're told it's a 'job', and it can get your bank account closed.",
+      "source": "UK Finance / police",
+      "verifyBeforeDemo": true,
+      "year": 2026
+    },
+    {
+      "id": "phoneContract",
+      "text": "A phone contract with a handset is usually a credit agreement, so missed payments can show on your credit file.",
+      "source": "Credit reference agencies",
+      "verifyBeforeDemo": true,
+      "year": 2026
+    },
+    {
+      "id": "depositProtection",
+      "text": "In England and Wales, landlords must protect a tenancy deposit in a government-approved scheme. Rules differ in Scotland and Northern Ireland.",
+      "source": "gov.uk",
+      "verifyBeforeDemo": true,
+      "year": 2026
+    },
+    {
+      "id": "councilTax",
+      "text": "Some people get a council tax discount or don't pay it at all, for example if everyone in the home is a full-time student.",
+      "source": "gov.uk",
+      "verifyBeforeDemo": true,
+      "year": 2026
+    },
+    {
+      "id": "socialTariffs",
+      "text": "Many broadband and mobile companies offer cheaper 'social tariffs' to people on certain benefits.",
+      "source": "Ofcom",
+      "verifyBeforeDemo": true,
+      "year": 2026
+    },
+    {
+      "id": "debtAdvice",
+      "text": "Free, confidential debt advice is available from charities such as Citizens Advice, StepChange and National Debtline, and from MoneyHelper.",
+      "source": "MoneyHelper",
+      "verifyBeforeDemo": true,
+      "year": 2026
+    },
+    {
+      "id": "benefitsCheck",
+      "text": "Free online benefits calculators can show what support you might be able to get.",
+      "source": "gov.uk",
+      "verifyBeforeDemo": true,
+      "year": 2026
+    },
+    {
+      "id": "savingsProtection",
+      "text": "Savings in UK banks are protected by the Financial Services Compensation Scheme (FSCS) up to a limit per person, per bank.",
+      "source": "FSCS",
+      "verifyBeforeDemo": true,
+      "year": 2026
+    }
+  ],
+  "chapters": [
+    {
+      "id": 1,
+      "title": "Needs, wants and your first budget",
+      "symbol": "list.bullet.clipboard.fill",
+      "summary": "Tell needs from wants and make a plan for payday.",
+      "needsMoreContent": false,
+      "levels": [
+        {
+          "title": "Payday plan",
+          "persona": "Aisha, 17, works in a café. Her hours change every week.",
+          "steps": [
+            {
+              "kind": "event",
+              "prompt": "Payday! Your shifts were short this month, so you've been paid less than usual. What do you do first?",
+              "topic": "budgeting with irregular income",
+              "options": [
+                {
+                  "text": "List my needs first: bus fares, my phone share and food at college",
+                  "explanation": "Covering needs first means a short month doesn't turn into missed bills.",
+                  "effects": {
+                    "balance": 15,
+                    "wisdom": 10,
+                    "money": 0
+                  }
+                },
+                {
+                  "text": "Spend as normal and hope next month is better",
+                  "explanation": "When income goes up and down, planning for the low months protects you.",
+                  "effects": {
+                    "balance": -15,
+                    "resilience": -10,
+                    "money": -40
+                  }
+                },
+                {
+                  "text": "Put a little aside first, even £5",
+                  "explanation": "Saving a small amount first builds the habit, whatever you earn.",
+                  "effects": {
+                    "resilience": 15,
+                    "endurance": 5,
+                    "money": -5
+                  }
+                }
+              ],
+              "id": "c1l1s1"
+            },
+            {
+              "kind": "question",
+              "prompt": "Which of these is a need?",
+              "topic": "needs and wants",
+              "options": [
+                {
+                  "text": "A bus pass to get to college",
+                  "explanation": "Getting to college or work is a need. The others are wants: nice, but you can live without them.",
+                  "effects": {},
+                  "correct": true
+                },
+                {
+                  "text": "New trainers when yours are fine",
+                  "explanation": "Trainers that still work are a want right now. A need is something you can't do without.",
+                  "effects": {},
+                  "correct": false
+                },
+                {
+                  "text": "A second streaming subscription",
+                  "explanation": "Streaming is a want. It's fine to have wants, just after needs.",
+                  "effects": {},
+                  "correct": false
+                },
+                {
+                  "text": "A takeaway on Friday",
+                  "explanation": "A takeaway is a want. Food is a need, but takeaways cost more.",
+                  "effects": {},
+                  "correct": false
+                }
+              ],
+              "id": "c1l1s2"
+            },
+            {
+              "kind": "event",
+              "prompt": "A friend's birthday meal costs £25, but you planned £15 for fun this month.",
+              "topic": "saying no to spending",
+              "options": [
+                {
+                  "text": "Suggest a cheaper plan, or just go for dessert",
+                  "explanation": "Being honest about your budget is a skill, and friends usually get it.",
+                  "effects": {
+                    "wisdom": 10,
+                    "balance": 10,
+                    "money": -10
+                  }
+                },
+                {
+                  "text": "Go and pay £25 anyway",
+                  "explanation": "That's OK sometimes, but it means cutting something else this month.",
+                  "effects": {
+                    "balance": -10,
+                    "money": -25
+                  }
+                },
+                {
+                  "text": "Skip it and send a card",
+                  "explanation": "Also fine. The point is deciding with your budget, not on the spot.",
+                  "effects": {
+                    "balance": 5,
+                    "money": -2
+                  }
+                }
+              ],
+              "id": "c1l1s3"
+            },
+            {
+              "kind": "question",
+              "prompt": "A budget is only useful if you have lots of money.",
+              "topic": "budgeting",
+              "options": [
+                {
+                  "text": "True",
+                  "explanation": "False. A budget matters most when money is tight. It's just a plan for the money you have.",
+                  "effects": {},
+                  "correct": false
+                },
+                {
+                  "text": "False",
+                  "explanation": "False. A budget matters most when money is tight. It's just a plan for the money you have.",
+                  "effects": {},
+                  "correct": true
+                }
+              ],
+              "id": "c1l1s4"
+            }
+          ],
+          "learned": [
+            "Cover needs before wants.",
+            "Plan for your lowest-paid months, not your best.",
+            "Saving a little first works on any income."
+          ],
+          "id": "c1l1"
+        },
+        {
+          "title": "Sharing a flat",
+          "persona": "Ollie, 17, lives with his older sister and pays towards food.",
+          "steps": [
+            {
+              "kind": "event",
+              "prompt": "Your sister asks you to put £20 a week towards food shopping. How do you plan for it?",
+              "topic": "sharing costs",
+              "options": [
+                {
+                  "text": "Add it to my budget as a fixed weekly cost",
+                  "explanation": "Treating it like a bill means it never catches you out.",
+                  "effects": {
+                    "reliability": 15,
+                    "balance": 10,
+                    "money": -20
+                  }
+                },
+                {
+                  "text": "Pay when I remember",
+                  "explanation": "Paying late puts pressure on the people you live with, and it's a habit lenders notice later.",
+                  "effects": {
+                    "reliability": -15,
+                    "money": -20
+                  }
+                },
+                {
+                  "text": "Ask to pay less this month and say why",
+                  "explanation": "Talking early is much better than missing a payment.",
+                  "effects": {
+                    "reliability": 5,
+                    "wisdom": 10,
+                    "money": -10
+                  }
+                }
+              ],
+              "id": "c1l2s1"
+            },
+            {
+              "kind": "event",
+              "prompt": "Bus fares go up by 50p a trip.",
+              "topic": "price rises",
+              "options": [
+                {
+                  "text": "Work out the new monthly cost and adjust my budget",
+                  "explanation": "Small price rises add up over a month, so updating your plan keeps it real.",
+                  "effects": {
+                    "wisdom": 10,
+                    "balance": 10,
+                    "money": -10
+                  }
+                },
+                {
+                  "text": "Ignore it",
+                  "explanation": "50p a trip, twice a day, five days a week is about £20 a month.",
+                  "effects": {
+                    "balance": -10,
+                    "money": -20
+                  }
+                },
+                {
+                  "text": "Check for a cheaper weekly or student ticket",
+                  "explanation": "Capped and student tickets can save a lot. It's always worth checking.",
+                  "effects": {
+                    "wisdom": 15,
+                    "balance": 5,
+                    "money": -5
+                  }
+                }
+              ],
+              "id": "c1l2s2"
+            },
+            {
+              "kind": "question",
+              "prompt": "What's the simplest way to start a budget?",
+              "topic": "starting a budget",
+              "options": [
+                {
+                  "text": "Write down the money coming in and going out",
+                  "explanation": "That's it. Everything else builds on knowing your money in and out.",
+                  "effects": {},
+                  "correct": true
+                },
+                {
+                  "text": "Download five different apps",
+                  "explanation": "Tools help, but the first step is just knowing what comes in and goes out.",
+                  "effects": {},
+                  "correct": false
+                },
+                {
+                  "text": "Wait until you earn more",
+                  "explanation": "Starting now, with whatever you have, is what builds the habit.",
+                  "effects": {},
+                  "correct": false
+                }
+              ],
+              "id": "c1l2s3"
+            }
+          ],
+          "learned": [
+            "Treat shared costs like bills.",
+            "Small price rises add up: update your plan.",
+            "A budget is money in vs money out."
+          ],
+          "id": "c1l2"
+        },
+        {
+          "title": "Expect the unexpected",
+          "persona": "Priya, 16, helps care for her mum and gets £20 a week from family.",
+          "steps": [
+            {
+              "kind": "event",
+              "prompt": "Your phone screen cracks. A repair shop quotes £60.",
+              "topic": "unexpected costs",
+              "options": [
+                {
+                  "text": "Check if any insurance or warranty covers it first",
+                  "explanation": "Always check what cover you already have before paying.",
+                  "effects": {
+                    "wisdom": 15,
+                    "money": 0
+                  }
+                },
+                {
+                  "text": "Ask for quotes and choose a cheaper, trusted repair",
+                  "explanation": "Comparing prices is a simple way to save.",
+                  "effects": {
+                    "wisdom": 10,
+                    "balance": 5,
+                    "money": -40
+                  }
+                },
+                {
+                  "text": "Keep using it cracked for now",
+                  "explanation": "That can be sensible if it still works safely, while you save up.",
+                  "effects": {
+                    "resilience": 5,
+                    "money": 0
+                  }
+                }
+              ],
+              "id": "c1l3s1"
+            },
+            {
+              "kind": "question",
+              "prompt": "What's an emergency fund?",
+              "topic": "emergency fund",
+              "options": [
+                {
+                  "text": "Money set aside for surprises, like repairs",
+                  "explanation": "Yes. Even a small fund means a surprise doesn't become a crisis.",
+                  "effects": {},
+                  "correct": true
+                },
+                {
+                  "text": "Money for a holiday",
+                  "explanation": "That's a savings goal. An emergency fund is only for surprises.",
+                  "effects": {},
+                  "correct": false
+                },
+                {
+                  "text": "A loan you take when things go wrong",
+                  "explanation": "A loan is borrowing. An emergency fund is your own money.",
+                  "effects": {},
+                  "correct": false
+                }
+              ],
+              "id": "c1l3s2"
+            },
+            {
+              "kind": "question",
+              "prompt": "You need a big income to build an emergency fund.",
+              "topic": "emergency fund",
+              "options": [
+                {
+                  "text": "True",
+                  "explanation": "False. Putting aside even £1 or £2 a week adds up, and it's the habit that counts.",
+                  "effects": {},
+                  "correct": false
+                },
+                {
+                  "text": "False",
+                  "explanation": "False. Putting aside even £1 or £2 a week adds up, and it's the habit that counts.",
+                  "effects": {},
+                  "correct": true
+                }
+              ],
+              "id": "c1l3s3"
+            }
+          ],
+          "learned": [
+            "Check existing cover before paying for repairs.",
+            "An emergency fund is for surprises only.",
+            "Any amount, saved regularly, builds a buffer."
+          ],
+          "id": "c1l3"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Payslips, tax and National Insurance",
+      "symbol": "doc.text.fill",
+      "summary": "Read your first payslip: gross, net, tax codes and NI.",
+      "needsMoreContent": true,
+      "levels": [
+        {
+          "title": "Your first payslip",
+          "persona": "Kai, 17, has just started at a supermarket.",
+          "steps": [
+            {
+              "kind": "question",
+              "prompt": "On a payslip, what does 'gross pay' mean?",
+              "topic": "gross and net pay",
+              "options": [
+                {
+                  "text": "Your pay before anything is taken off",
+                  "explanation": "Right. Net pay is what lands in your account after deductions.",
+                  "effects": {},
+                  "correct": true
+                },
+                {
+                  "text": "Your pay after tax",
+                  "explanation": "That's net pay. Gross is before deductions.",
+                  "effects": {},
+                  "correct": false
+                },
+                {
+                  "text": "Your overtime only",
+                  "explanation": "Gross pay is all your pay before deductions.",
+                  "effects": {},
+                  "correct": false
+                }
+              ],
+              "id": "c2l1s1"
+            },
+            {
+              "kind": "question",
+              "prompt": "What does a tax code do?",
+              "topic": "tax codes",
+              "options": [
+                {
+                  "text": "Tells your employer how much tax-free pay you get",
+                  "explanation": "{{fact:taxCode}} {{fact:personalAllowance}}",
+                  "effects": {},
+                  "correct": true
+                },
+                {
+                  "text": "It's your employee ID",
+                  "explanation": "{{fact:taxCode}}",
+                  "effects": {},
+                  "correct": false
+                },
+                {
+                  "text": "It shows your bank details",
+                  "explanation": "{{fact:taxCode}}",
+                  "effects": {},
+                  "correct": false
+                }
+              ],
+              "id": "c2l1s2"
+            },
+            {
+              "kind": "event",
+              "prompt": "You're offered an extra shift during exam week.",
+              "topic": "extra shifts",
+              "options": [
+                {
+                  "text": "Say no this time and ask for a shift next week",
+                  "explanation": "Your exams matter too. Balancing work and study is a good money skill.",
+                  "effects": {
+                    "wisdom": 10,
+                    "endurance": 5,
+                    "money": 0
+                  }
+                },
+                {
+                  "text": "Take it",
+                  "explanation": "Fine if you can manage it. Extra pay helps, but not at any cost.",
+                  "effects": {
+                    "resilience": 5,
+                    "money": 45
+                  }
+                }
+              ],
+              "id": "c2l1s3"
+            },
+            {
+              "kind": "question",
+              "prompt": "Your National Insurance number usually arrives around your 16th birthday.",
+              "topic": "National Insurance",
+              "options": [
+                {
+                  "text": "True",
+                  "explanation": "{{fact:niNumber}}",
+                  "effects": {},
+                  "correct": true
+                },
+                {
+                  "text": "False",
+                  "explanation": "{{fact:niNumber}}",
+                  "effects": {},
+                  "correct": false
+                }
+              ],
+              "id": "c2l1s4"
+            }
+          ],
+          "learned": [
+            "Gross is before deductions; net is what you get.",
+            "Check your tax code is right.",
+            "Keep your NI number safe."
+          ],
+          "id": "c2l1"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Bank accounts",
+      "symbol": "building.columns.fill",
+      "summary": "Current vs savings accounts, debit cards, interest and AER.",
+      "needsMoreContent": true,
+      "levels": [
+        {
+          "title": "Two accounts",
+          "persona": "Mina, 17, is an international student at a Manchester college.",
+          "steps": [
+            {
+              "kind": "question",
+              "prompt": "What's a current account mainly for?",
+              "topic": "current accounts",
+              "options": [
+                {
+                  "text": "Everyday spending, with a debit card",
+                  "explanation": "Yes. A savings account is for money you're putting aside.",
+                  "effects": {},
+                  "correct": true
+                },
+                {
+                  "text": "Earning the most interest",
+                  "explanation": "Savings accounts usually pay more interest. Current accounts are for day-to-day money.",
+                  "effects": {},
+                  "correct": false
+                },
+                {
+                  "text": "Borrowing money",
+                  "explanation": "A current account is for your own money. Borrowing is separate.",
+                  "effects": {},
+                  "correct": false
+                }
+              ],
+              "id": "c3l1s1"
+            },
+            {
+              "kind": "question",
+              "prompt": "What does AER tell you?",
+              "topic": "AER",
+              "options": [
+                {
+                  "text": "How much interest you'd earn over a year",
+                  "explanation": "AER (annual equivalent rate) helps you compare savings accounts fairly.",
+                  "effects": {},
+                  "correct": true
+                },
+                {
+                  "text": "The cost of borrowing",
+                  "explanation": "That's APR. AER is for savings.",
+                  "effects": {},
+                  "correct": false
+                },
+                {
+                  "text": "Your account number",
+                  "explanation": "AER is an interest rate, used to compare savings accounts.",
+                  "effects": {},
+                  "correct": false
+                }
+              ],
+              "id": "c3l1s2"
+            },
+            {
+              "kind": "event",
+              "prompt": "You can't find your debit card.",
+              "topic": "lost cards",
+              "options": [
+                {
+                  "text": "Freeze it in my banking app straight away",
+                  "explanation": "Freezing is instant and you can unfreeze it if it turns up.",
+                  "effects": {
+                    "reliability": 10,
+                    "wisdom": 10,
+                    "money": 0
+                  }
+                },
+                {
+                  "text": "Wait a few days to see if it turns up",
+                  "explanation": "Someone could use it in the meantime. Freeze first, then look.",
+                  "effects": {
+                    "resilience": -10,
+                    "money": 0
+                  }
+                }
+              ],
+              "id": "c3l1s3"
+            },
+            {
+              "kind": "question",
+              "prompt": "Savings in UK banks have some protection if the bank fails.",
+              "topic": "savings protection",
+              "options": [
+                {
+                  "text": "True",
+                  "explanation": "{{fact:savingsProtection}}",
+                  "effects": {},
+                  "correct": true
+                },
+                {
+                  "text": "False",
+                  "explanation": "{{fact:savingsProtection}}",
+                  "effects": {},
+                  "correct": false
+                }
+              ],
+              "id": "c3l1s4"
+            }
+          ],
+          "learned": [
+            "Current account for spending, savings account for saving.",
+            "Compare savings with AER.",
+            "Freeze a lost card straight away."
+          ],
+          "id": "c3l1"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Saving and compound interest",
+      "symbol": "chart.line.uptrend.xyaxis",
+      "summary": "Why starting small and early works.",
+      "needsMoreContent": true,
+      "levels": [
+        {
+          "title": "Interest on interest",
+          "persona": "Sam, 17, gets a college bursary instead of wages.",
+          "steps": [
+            {
+              "kind": "question",
+              "prompt": "What is compound interest?",
+              "topic": "compound interest",
+              "options": [
+                {
+                  "text": "Interest earned on your savings and on interest you've already earned",
+                  "explanation": "Yes. Over time it snowballs, which is why starting early helps.",
+                  "effects": {},
+                  "correct": true
+                },
+                {
+                  "text": "A fee for saving",
+                  "explanation": "It's the opposite: money you earn on savings.",
+                  "effects": {},
+                  "correct": false
+                },
+                {
+                  "text": "Interest that's only paid once",
+                  "explanation": "Compound interest keeps building on itself.",
+                  "effects": {},
+                  "correct": false
+                }
+              ],
+              "id": "c4l1s1"
+            },
+            {
+              "kind": "event",
+              "prompt": "Your bursary payment arrives.",
+              "topic": "saving first",
+              "options": [
+                {
+                  "text": "Move a small fixed amount to savings straight away",
+                  "explanation": "Paying yourself first works whatever your income.",
+                  "effects": {
+                    "resilience": 15,
+                    "endurance": 10,
+                    "money": -10
+                  }
+                },
+                {
+                  "text": "Save whatever's left at the end of the month",
+                  "explanation": "There often isn't anything left. Saving first is more reliable.",
+                  "effects": {
+                    "resilience": -5,
+                    "money": 0
+                  }
+                }
+              ],
+              "id": "c4l1s2"
+            },
+            {
+              "kind": "question",
+              "prompt": "Saving £2 a week is too little to matter.",
+              "topic": "small savings",
+              "options": [
+                {
+                  "text": "True",
+                  "explanation": "False. £2 a week is over £100 a year, and the habit matters more than the amount.",
+                  "effects": {},
+                  "correct": false
+                },
+                {
+                  "text": "False",
+                  "explanation": "False. £2 a week is over £100 a year, and the habit matters more than the amount.",
+                  "effects": {},
+                  "correct": true
+                }
+              ],
+              "id": "c4l1s3"
+            }
+          ],
+          "learned": [
+            "Compound interest is interest on interest.",
+            "Save first, spend after.",
+            "Small regular amounts add up."
+          ],
+          "id": "c4l1"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Borrowing",
+      "symbol": "creditcard.fill",
+      "summary": "APR, overdrafts, buy now pay later, payday loans and the minimum-payment trap.",
+      "needsMoreContent": false,
+      "levels": [
+        {
+          "title": "What borrowing costs",
+          "persona": "Jordan, 17, is thinking about the future.",
+          "steps": [
+            {
+              "kind": "question",
+              "prompt": "What does APR show?",
+              "topic": "APR",
+              "options": [
+                {
+                  "text": "The yearly cost of borrowing, including interest and most fees",
+                  "explanation": "APR lets you compare the cost of different credit. Higher APR means more expensive.",
+                  "effects": {},
+                  "correct": true
+                },
+                {
+                  "text": "How much you'll earn on savings",
+                  "explanation": "That's AER. APR is the cost of borrowing.",
+                  "effects": {},
+                  "correct": false
+                },
+                {
+                  "text": "Your monthly pay",
+                  "explanation": "APR is about borrowing, not pay.",
+                  "effects": {},
+                  "correct": false
+                }
+              ],
+              "id": "c5l1s1"
+            },
+            {
+              "kind": "question",
+              "prompt": "An arranged overdraft is a type of borrowing.",
+              "topic": "overdrafts",
+              "options": [
+                {
+                  "text": "True",
+                  "explanation": "True. An overdraft lets you spend money you don't have, and you'll usually pay interest on it.",
+                  "effects": {},
+                  "correct": true
+                },
+                {
+                  "text": "False",
+                  "explanation": "True. An overdraft lets you spend money you don't have, and you'll usually pay interest on it.",
+                  "effects": {},
+                  "correct": false
+                }
+              ],
+              "id": "c5l1s2"
+            },
+            {
+              "kind": "event",
+              "prompt": "A friend says: 'Just borrow it, everyone does.'",
+              "topic": "deciding to borrow",
+              "options": [
+                {
+                  "text": "Work out the total cost and whether I can repay it",
+                  "explanation": "Knowing the full cost before you borrow is the most important borrowing skill.",
+                  "effects": {
+                    "wisdom": 15,
+                    "resilience": 5,
+                    "money": 0
+                  }
+                },
+                {
+                  "text": "Borrow first and think later",
+                  "explanation": "Borrowing without a plan to repay is how debt grows.",
+                  "effects": {
+                    "resilience": -15,
+                    "reliability": -10,
+                    "money": 0
+                  }
+                },
+                {
+                  "text": "Wait and save up instead",
+                  "explanation": "Often the cheapest option is not borrowing at all.",
+                  "effects": {
+                    "resilience": 10,
+                    "wisdom": 10,
+                    "money": 0
+                  }
+                }
+              ],
+              "id": "c5l1s3"
+            }
+          ],
+          "learned": [
+            "APR is the yearly cost of borrowing.",
+            "Overdrafts are borrowing too.",
+            "Know the total cost before you borrow."
+          ],
+          "id": "c5l1"
+        },
+        {
+          "title": "Buy now pay later",
+          "persona": "Ellie, 17, is buying trainers online.",
+          "steps": [
+            {
+              "kind": "event",
+              "prompt": "The checkout offers: 'Split £90 into 3 payments of £30!'",
+              "topic": "buy now pay later",
+              "options": [
+                {
+                  "text": "Check I can afford all 3 payments, or pay in one go if I have the money",
+                  "explanation": "Splitting doesn't make something cheaper. Only use it if all the payments fit your budget.",
+                  "effects": {
+                    "wisdom": 15,
+                    "balance": 5,
+                    "money": -90
+                  }
+                },
+                {
+                  "text": "Split it, it feels cheaper",
+                  "explanation": "It's the same £90. Several 'small' plans at once can add up fast.",
+                  "effects": {
+                    "balance": -15,
+                    "money": -30
+                  }
+                },
+                {
+                  "text": "Save up and buy them next month",
+                  "explanation": "Waiting costs nothing and avoids missed payments.",
+                  "effects": {
+                    "resilience": 10,
+                    "wisdom": 5,
+                    "money": 0
+                  }
+                }
+              ],
+              "id": "c5l2s1"
+            },
+            {
+              "kind": "question",
+              "prompt": "Buy now pay later is still borrowing.",
+              "topic": "buy now pay later",
+              "options": [
+                {
+                  "text": "True",
+                  "explanation": "{{fact:bnplCredit}}",
+                  "effects": {},
+                  "correct": true
+                },
+                {
+                  "text": "False",
+                  "explanation": "{{fact:bnplCredit}}",
+                  "effects": {},
+                  "correct": false
+                }
+              ],
+              "id": "c5l2s2"
+            },
+            {
+              "kind": "question",
+              "prompt": "You've got three buy now pay later plans running. What's the risk?",
+              "topic": "buy now pay later",
+              "options": [
+                {
+                  "text": "Payments can add up and be hard to keep track of",
+                  "explanation": "Many small payments can take a big chunk of your money each month.",
+                  "effects": {},
+                  "correct": true
+                },
+                {
+                  "text": "None, they're interest-free",
+                  "explanation": "Some are interest-free, but late fees and missed payments still cost you.",
+                  "effects": {},
+                  "correct": false
+                },
+                {
+                  "text": "You'll get a better credit score",
+                  "explanation": "Missing payments can harm your credit file, not help it.",
+                  "effects": {},
+                  "correct": false
+                }
+              ],
+              "id": "c5l2s3"
+            }
+          ],
+          "learned": [
+            "Splitting a payment doesn't make it cheaper.",
+            "BNPL is borrowing with consequences if you miss payments.",
+            "Keep track of every plan you're in."
+          ],
+          "id": "c5l2"
+        },
+        {
+          "title": "Traps to avoid",
+          "persona": "Marcus, 17, is leaving care and planning his first flat.",
+          "steps": [
+            {
+              "kind": "event",
+              "prompt": "Money is short a week before payday.",
+              "topic": "payday loans",
+              "options": [
+                {
+                  "text": "Talk to my key worker or a trusted adult about options",
+                  "explanation": "Asking for help early is a strength. There may be support you didn't know about.",
+                  "effects": {
+                    "wisdom": 15,
+                    "resilience": 10,
+                    "money": 0
+                  }
+                },
+                {
+                  "text": "Use my emergency fund for essentials only",
+                  "explanation": "That's exactly what it's for. Top it up when you can.",
+                  "effects": {
+                    "resilience": 5,
+                    "money": -30
+                  }
+                },
+                {
+                  "text": "Take a payday loan",
+                  "explanation": "Payday loans are a very expensive way to borrow. {{fact:paydayCap}}",
+                  "effects": {
+                    "resilience": -20,
+                    "reliability": -10,
+                    "money": 50
+                  }
+                }
+              ],
+              "id": "c5l3s1"
+            },
+            {
+              "kind": "question",
+              "prompt": "Paying only the minimum on a credit card each month is the cheapest way to clear it.",
+              "topic": "minimum payments",
+              "options": [
+                {
+                  "text": "True",
+                  "explanation": "False. Paying only the minimum means it takes much longer to clear and you pay much more interest. This is the minimum-payment trap.",
+                  "effects": {},
+                  "correct": false
+                },
+                {
+                  "text": "False",
+                  "explanation": "False. Paying only the minimum means it takes much longer to clear and you pay much more interest. This is the minimum-payment trap.",
+                  "effects": {},
+                  "correct": true
+                }
+              ],
+              "id": "c5l3s2"
+            },
+            {
+              "kind": "question",
+              "prompt": "Which is usually the most expensive way to borrow?",
+              "topic": "payday loans",
+              "options": [
+                {
+                  "text": "A payday loan",
+                  "explanation": "Yes. Payday loans usually cost far more than other borrowing.",
+                  "effects": {},
+                  "correct": true
+                },
+                {
+                  "text": "Borrowing from family, if agreed fairly",
+                  "explanation": "Family loans can be interest-free, but agree a repayment plan.",
+                  "effects": {},
+                  "correct": false
+                },
+                {
+                  "text": "Not borrowing and waiting",
+                  "explanation": "Waiting costs nothing.",
+                  "effects": {},
+                  "correct": false
+                }
+              ],
+              "id": "c5l3s3"
+            }
+          ],
+          "learned": [
+            "Ask for help early when money's short.",
+            "Payday loans are very expensive.",
+            "Minimum payments keep you in debt longer."
+          ],
+          "id": "c5l3"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "title": "Credit files",
+      "symbol": "doc.badge.clock.fill",
+      "summary": "What's on a credit file, why it starts at 18, and why your Readiness Score isn't one.",
+      "needsMoreContent": false,
+      "levels": [
+        {
+          "title": "What's on a credit file?",
+          "persona": "Zara, 17, wants to rent a flat one day.",
+          "steps": [
+            {
+              "kind": "question",
+              "prompt": "Which of these is on a credit file?",
+              "topic": "credit files",
+              "options": [
+                {
+                  "text": "Whether you've paid credit and some bills on time",
+                  "explanation": "Yes. Payment history is a big part of a credit file.",
+                  "effects": {},
+                  "correct": true
+                },
+                {
+                  "text": "Your exam results",
+                  "explanation": "Credit files are about borrowing and bills, not school.",
+                  "effects": {},
+                  "correct": false
+                },
+                {
+                  "text": "Every shop you've bought from",
+                  "explanation": "Your everyday shopping isn't on your credit file.",
+                  "effects": {},
+                  "correct": false
+                },
+                {
+                  "text": "How much you have in savings",
+                  "explanation": "Savings balances aren't on your credit file.",
+                  "effects": {},
+                  "correct": false
+                }
+              ],
+              "id": "c6l1s1"
+            },
+            {
+              "kind": "question",
+              "prompt": "Most credit files start around your 18th birthday.",
+              "topic": "credit file age",
+              "options": [
+                {
+                  "text": "True",
+                  "explanation": "{{fact:creditFileAge}}",
+                  "effects": {},
+                  "correct": true
+                },
+                {
+                  "text": "False",
+                  "explanation": "{{fact:creditFileAge}}",
+                  "effects": {},
+                  "correct": false
+                }
+              ],
+              "id": "c6l1s2"
+            },
+            {
+              "kind": "event",
+              "prompt": "You're 17 and want to be ready for your first account at 18.",
+              "topic": "getting ready for 18",
+              "options": [
+                {
+                  "text": "Pay any bills I share on time, every time",
+                  "explanation": "On-time habits now make it easy later.",
+                  "effects": {
+                    "reliability": 15,
+                    "endurance": 5,
+                    "money": 0
+                  }
+                },
+                {
+                  "text": "Sign up for a credit card the day I turn 18",
+                  "explanation": "There's no rush. Borrowing because you can isn't a plan.",
+                  "effects": {
+                    "wisdom": -5,
+                    "resilience": -5,
+                    "money": 0
+                  }
+                },
+                {
+                  "text": "Learn what lenders look for",
+                  "explanation": "Knowing what matters means no surprises.",
+                  "effects": {
+                    "wisdom": 15,
+                    "money": 0
+                  }
+                }
+              ],
+              "id": "c6l1s3"
+            }
+          ],
+          "learned": [
+            "Credit files show payment history.",
+            "They usually start around 18.",
+            "On-time habits matter more than anything."
+          ],
+          "id": "c6l1"
+        },
+        {
+          "title": "Building a good record",
+          "persona": "Leo, 17, shares a phone bill with his dad.",
+          "steps": [
+            {
+              "kind": "question",
+              "prompt": "Being on the electoral register can help lenders confirm who you are.",
+              "topic": "electoral register",
+              "options": [
+                {
+                  "text": "True",
+                  "explanation": "{{fact:electoralRegister}}",
+                  "effects": {},
+                  "correct": true
+                },
+                {
+                  "text": "False",
+                  "explanation": "{{fact:electoralRegister}}",
+                  "effects": {},
+                  "correct": false
+                }
+              ],
+              "id": "c6l2s1"
+            },
+            {
+              "kind": "event",
+              "prompt": "You forgot to send your share of the phone bill and it's 2 days late.",
+              "topic": "late payments",
+              "options": [
+                {
+                  "text": "Pay now and set a reminder for next month",
+                  "explanation": "Fixing it fast and setting a reminder stops it happening again.",
+                  "effects": {
+                    "reliability": 10,
+                    "wisdom": 10,
+                    "money": -10
+                  }
+                },
+                {
+                  "text": "Leave it until next month",
+                  "explanation": "Late payments add up. On real credit, missed payments are recorded.",
+                  "effects": {
+                    "reliability": -20,
+                    "money": 0
+                  }
+                },
+                {
+                  "text": "Tell my dad and pay what I can now",
+                  "explanation": "Talking early always helps.",
+                  "effects": {
+                    "reliability": 5,
+                    "wisdom": 5,
+                    "money": -5
+                  }
+                }
+              ],
+              "id": "c6l2s2"
+            },
+            {
+              "kind": "question",
+              "prompt": "How long do missed payments usually stay on a credit file?",
+              "topic": "missed payments",
+              "options": [
+                {
+                  "text": "About six years",
+                  "explanation": "{{fact:missedPayments}}",
+                  "effects": {},
+                  "correct": true
+                },
+                {
+                  "text": "One month",
+                  "explanation": "{{fact:missedPayments}}",
+                  "effects": {},
+                  "correct": false
+                },
+                {
+                  "text": "Until you turn 18",
+                  "explanation": "{{fact:missedPayments}}",
+                  "effects": {},
+                  "correct": false
+                }
+              ],
+              "id": "c6l2s3"
+            }
+          ],
+          "learned": [
+            "Register to vote when you can.",
+            "Reminders beat late payments.",
+            "Missed payments stay on a file for years."
+          ],
+          "id": "c6l2"
+        },
+        {
+          "title": "Readiness vs credit score",
+          "persona": "Amara, 16, is checking her Nova Readiness Score.",
+          "steps": [
+            {
+              "kind": "question",
+              "prompt": "Your Nova Readiness Score is your credit score.",
+              "topic": "Readiness Score",
+              "options": [
+                {
+                  "text": "True",
+                  "explanation": "False. It's a readiness score, not a credit score. It shows habits that matter later, but it isn't shared with credit reference agencies and doesn't change a credit file.",
+                  "effects": {},
+                  "correct": false
+                },
+                {
+                  "text": "False",
+                  "explanation": "False. It's a readiness score, not a credit score. It shows habits that matter later, but it isn't shared with credit reference agencies and doesn't change a credit file.",
+                  "effects": {},
+                  "correct": true
+                }
+              ],
+              "id": "c6l3s1"
+            },
+            {
+              "kind": "event",
+              "prompt": "Someone messages: 'Pay £50 and we'll fix your credit score.'",
+              "topic": "credit repair scams",
+              "options": [
+                {
+                  "text": "Ignore and block them",
+                  "explanation": "Nobody can 'fix' a credit score for a fee. It's a scam.",
+                  "effects": {
+                    "wisdom": 15,
+                    "resilience": 5,
+                    "money": 0
+                  }
+                },
+                {
+                  "text": "Pay, just in case",
+                  "explanation": "This is a scam. You'd lose £50 and maybe your details.",
+                  "effects": {
+                    "resilience": -20,
+                    "money": -50
+                  }
+                }
+              ],
+              "id": "c6l3s2"
+            },
+            {
+              "kind": "question",
+              "prompt": "What helps a future credit file the most?",
+              "topic": "credit files",
+              "options": [
+                {
+                  "text": "Paying on time, every time",
+                  "explanation": "Yes. Payment history matters more than the amount you borrow or earn.",
+                  "effects": {},
+                  "correct": true
+                },
+                {
+                  "text": "Earning a lot",
+                  "explanation": "Income isn't the main thing. Paying on time is.",
+                  "effects": {},
+                  "correct": false
+                },
+                {
+                  "text": "Borrowing as much as possible",
+                  "explanation": "Borrowing more doesn't help. Managing it well does.",
+                  "effects": {},
+                  "correct": false
+                }
+              ],
+              "id": "c6l3s3"
+            }
+          ],
+          "learned": [
+            "The Readiness Score is not a credit score.",
+            "Nobody can fix a credit score for a fee.",
+            "On-time payments matter most."
+          ],
+          "id": "c6l3"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "title": "Scams and money mules",
+      "symbol": "exclamationmark.shield.fill",
+      "summary": "Spot 'easy money' offers, stay safe and know what to do.",
+      "needsMoreContent": false,
+      "levels": [
+        {
+          "title": "Easy money?",
+          "persona": "Jay, 17, gets a DM on social media.",
+          "steps": [
+            {
+              "kind": "event",
+              "prompt": "A DM says: 'Earn £500 this week! Just let us send money through your bank account.'",
+              "topic": "money mules",
+              "options": [
+                {
+                  "text": "Block, report and tell someone I trust",
+                  "explanation": "This is how money mule recruiters work. Blocking and reporting is exactly right.",
+                  "effects": {
+                    "wisdom": 20,
+                    "resilience": 10,
+                    "money": 0
+                  }
+                },
+                {
+                  "text": "Ask a few questions first",
+                  "explanation": "There's no safe version of this offer. The safest thing is to stop replying.",
+                  "effects": {
+                    "wisdom": 0,
+                    "money": 0
+                  }
+                },
+                {
+                  "text": "Say yes, it's only one week",
+                  "explanation": "{{fact:moneyMule}}",
+                  "effects": {
+                    "resilience": -30,
+                    "reliability": -20,
+                    "money": 0
+                  }
+                }
+              ],
+              "id": "c7l1s1"
+            },
+            {
+              "kind": "question",
+              "prompt": "What is a money mule?",
+              "topic": "money mules",
+              "options": [
+                {
+                  "text": "Someone who lets their account be used to move other people's money",
+                  "explanation": "{{fact:moneyMule}}",
+                  "effects": {},
+                  "correct": true
+                },
+                {
+                  "text": "A type of savings account",
+                  "explanation": "{{fact:moneyMule}}",
+                  "effects": {},
+                  "correct": false
+                },
+                {
+                  "text": "A delivery job",
+                  "explanation": "{{fact:moneyMule}}",
+                  "effects": {},
+                  "correct": false
+                }
+              ],
+              "id": "c7l1s2"
+            },
+            {
+              "kind": "question",
+              "prompt": "If you didn't know the money was stolen, there are no consequences.",
+              "topic": "money mules",
+              "options": [
+                {
+                  "text": "True",
+                  "explanation": "False. You could still lose your bank account and find it hard to open one later. {{fact:moneyMule}}",
+                  "effects": {},
+                  "correct": false
+                },
+                {
+                  "text": "False",
+                  "explanation": "False. You could still lose your bank account and find it hard to open one later. {{fact:moneyMule}}",
+                  "effects": {},
+                  "correct": true
+                }
+              ],
+              "id": "c7l1s3"
+            }
+          ],
+          "learned": [
+            "'Easy money' for using your account is money muling.",
+            "Block, report and tell someone you trust.",
+            "It can close your bank account for years."
+          ],
+          "id": "c7l1"
+        },
+        {
+          "title": "Spot the scam",
+          "persona": "Noah, 16, gets a call from 'his bank'.",
+          "steps": [
+            {
+              "kind": "event",
+              "prompt": "A caller says they're from your bank and asks you to move your money to a 'safe account'.",
+              "topic": "safe account scams",
+              "options": [
+                {
+                  "text": "Hang up and call my bank on a number I trust",
+                  "explanation": "{{fact:fraudLine}}",
+                  "effects": {
+                    "wisdom": 20,
+                    "resilience": 10,
+                    "money": 0
+                  }
+                },
+                {
+                  "text": "Do what they say, they know my name",
+                  "explanation": "Scammers often know personal details. A real bank will never ask you to move money to keep it safe.",
+                  "effects": {
+                    "resilience": -30,
+                    "money": -150
+                  }
+                }
+              ],
+              "id": "c7l2s1"
+            },
+            {
+              "kind": "question",
+              "prompt": "Your bank will never ask for your full PIN or password.",
+              "topic": "PINs and passwords",
+              "options": [
+                {
+                  "text": "True",
+                  "explanation": "True. Never share your PIN, passwords or one-time codes with anyone, even someone who says they're from your bank.",
+                  "effects": {},
+                  "correct": true
+                },
+                {
+                  "text": "False",
+                  "explanation": "True. Never share your PIN, passwords or one-time codes with anyone, even someone who says they're from your bank.",
+                  "effects": {},
+                  "correct": false
+                }
+              ],
+              "id": "c7l2s2"
+            },
+            {
+              "kind": "question",
+              "prompt": "A text says your parcel is waiting and links to a site asking for card details. What's the red flag?",
+              "topic": "phishing",
+              "options": [
+                {
+                  "text": "An unexpected link asking for card details",
+                  "explanation": "Unexpected links and urgent requests are classic signs of a scam. Go to the company's app or website yourself.",
+                  "effects": {},
+                  "correct": true
+                },
+                {
+                  "text": "It mentions a parcel",
+                  "explanation": "Parcels are normal. The red flag is a link asking for card details.",
+                  "effects": {},
+                  "correct": false
+                },
+                {
+                  "text": "It arrived by text",
+                  "explanation": "Texts can be real, but links asking for card details are a warning sign.",
+                  "effects": {},
+                  "correct": false
+                }
+              ],
+              "id": "c7l2s3"
+            }
+          ],
+          "learned": [
+            "Banks never ask you to move money to a 'safe account'.",
+            "Never share PINs, passwords or codes.",
+            "Don't use links in unexpected messages."
+          ],
+          "id": "c7l2"
+        },
+        {
+          "title": "If it happens to you",
+          "persona": "Ruby, 16, thinks she gave her card details to a fake site.",
+          "steps": [
+            {
+              "kind": "event",
+              "prompt": "You realise you typed your card details into a fake website.",
+              "topic": "what to do after a scam",
+              "options": [
+                {
+                  "text": "Contact my bank straight away and freeze my card",
+                  "explanation": "{{fact:reportFraud}}",
+                  "effects": {
+                    "wisdom": 15,
+                    "resilience": 15,
+                    "money": 0
+                  }
+                },
+                {
+                  "text": "Wait and see if anything happens",
+                  "explanation": "Acting fast gives your bank the best chance to stop payments.",
+                  "effects": {
+                    "resilience": -20,
+                    "money": -60
+                  }
+                }
+              ],
+              "id": "c7l3s1"
+            },
+            {
+              "kind": "question",
+              "prompt": "It's best to keep quiet if you've been scammed, because it's embarrassing.",
+              "topic": "getting help",
+              "options": [
+                {
+                  "text": "True",
+                  "explanation": "False. Scams fool people of every age. Telling your bank and a trusted adult quickly is the smart move.",
+                  "effects": {},
+                  "correct": false
+                },
+                {
+                  "text": "False",
+                  "explanation": "False. Scams fool people of every age. Telling your bank and a trusted adult quickly is the smart move.",
+                  "effects": {},
+                  "correct": true
+                }
+              ],
+              "id": "c7l3s2"
+            },
+            {
+              "kind": "question",
+              "prompt": "Who should you tell first?",
+              "topic": "getting help",
+              "options": [
+                {
+                  "text": "My bank",
+                  "explanation": "Yes. Your bank can freeze your card and look into payments. Then tell a trusted adult.",
+                  "effects": {},
+                  "correct": true
+                },
+                {
+                  "text": "Nobody",
+                  "explanation": "Telling your bank quickly is the best way to protect your money.",
+                  "effects": {},
+                  "correct": false
+                },
+                {
+                  "text": "The website that scammed me",
+                  "explanation": "Don't contact the scammers. Go to your bank.",
+                  "effects": {},
+                  "correct": false
+                }
+              ],
+              "id": "c7l3s3"
+            }
+          ],
+          "learned": [
+            "Act fast: call your bank and freeze your card.",
+            "There's no shame in being scammed.",
+            "Report it so others are protected too."
+          ],
+          "id": "c7l3"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "title": "Phone contracts, subscriptions and free trials",
+      "symbol": "iphone.gen3",
+      "summary": "Free trials that turn into payments, and what a contract means.",
+      "needsMoreContent": true,
+      "levels": [
+        {
+          "title": "Free for 30 days",
+          "persona": "Freya, 17, signs up for a music trial.",
+          "steps": [
+            {
+              "kind": "event",
+              "prompt": "A free trial needs your card details and renews in 30 days.",
+              "topic": "free trials",
+              "options": [
+                {
+                  "text": "Set a reminder to cancel before it renews",
+                  "explanation": "Free trials are designed to roll into paid ones. A reminder keeps you in control.",
+                  "effects": {
+                    "wisdom": 15,
+                    "balance": 5,
+                    "money": 0
+                  }
+                },
+                {
+                  "text": "Sign up and forget about it",
+                  "explanation": "Forgotten subscriptions are one of the easiest ways to lose money.",
+                  "effects": {
+                    "balance": -10,
+                    "money": -11
+                  }
+                }
+              ],
+              "id": "c8l1s1"
+            },
+            {
+              "kind": "question",
+              "prompt": "A phone contract that includes a handset is usually a credit agreement.",
+              "topic": "phone contracts",
+              "options": [
+                {
+                  "text": "True",
+                  "explanation": "{{fact:phoneContract}}",
+                  "effects": {},
+                  "correct": true
+                },
+                {
+                  "text": "False",
+                  "explanation": "{{fact:phoneContract}}",
+                  "effects": {},
+                  "correct": false
+                }
+              ],
+              "id": "c8l1s2"
+            },
+            {
+              "kind": "question",
+              "prompt": "You have 4 subscriptions. What's a good habit?",
+              "topic": "subscriptions",
+              "options": [
+                {
+                  "text": "Check them every few months and cancel ones I don't use",
+                  "explanation": "Regular check-ups stop money leaking away.",
+                  "effects": {},
+                  "correct": true
+                },
+                {
+                  "text": "Keep them all, they're cheap",
+                  "explanation": "Small amounts add up across a year.",
+                  "effects": {},
+                  "correct": false
+                }
+              ],
+              "id": "c8l1s3"
+            }
+          ],
+          "learned": [
+            "Set reminders before trials renew.",
+            "Phone contracts with handsets are credit.",
+            "Review subscriptions regularly."
+          ],
+          "id": "c8l1"
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "title": "Moving out",
+      "symbol": "house.fill",
+      "summary": "Rent, deposits, bills and council tax.",
+      "needsMoreContent": true,
+      "levels": [
+        {
+          "title": "Your first place",
+          "persona": "Ben, 17, is a care leaver planning his first flat with support.",
+          "steps": [
+            {
+              "kind": "question",
+              "prompt": "Besides rent, which costs should you plan for?",
+              "topic": "moving out costs",
+              "options": [
+                {
+                  "text": "Energy, water, internet, council tax and a deposit",
+                  "explanation": "Yes. Rent is only part of the cost of a home.",
+                  "effects": {},
+                  "correct": true
+                },
+                {
+                  "text": "Just rent",
+                  "explanation": "Bills and a deposit can add a lot. Plan for them too.",
+                  "effects": {},
+                  "correct": false
+                }
+              ],
+              "id": "c9l1s1"
+            },
+            {
+              "kind": "question",
+              "prompt": "A tenancy deposit has to be protected in an approved scheme in England and Wales.",
+              "topic": "deposits",
+              "options": [
+                {
+                  "text": "True",
+                  "explanation": "{{fact:depositProtection}}",
+                  "effects": {},
+                  "correct": true
+                },
+                {
+                  "text": "False",
+                  "explanation": "{{fact:depositProtection}}",
+                  "effects": {},
+                  "correct": false
+                }
+              ],
+              "id": "c9l1s2"
+            },
+            {
+              "kind": "event",
+              "prompt": "You're not sure whether you have to pay council tax.",
+              "topic": "council tax",
+              "options": [
+                {
+                  "text": "Check with the council or a support worker",
+                  "explanation": "{{fact:councilTax}}",
+                  "effects": {
+                    "wisdom": 15,
+                    "money": 0
+                  }
+                },
+                {
+                  "text": "Assume I don't and ignore letters",
+                  "explanation": "Ignoring council tax letters can lead to bigger bills. Always check.",
+                  "effects": {
+                    "reliability": -15,
+                    "money": 0
+                  }
+                }
+              ],
+              "id": "c9l1s3"
+            }
+          ],
+          "learned": [
+            "Rent is only part of the cost of a home.",
+            "Deposits should be protected.",
+            "Check council tax rather than guess."
+          ],
+          "id": "c9l1"
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "title": "When money is tight",
+      "symbol": "lifepreserver.fill",
+      "summary": "Social tariffs, benefits checkers, free debt advice and talking to your bank.",
+      "needsMoreContent": true,
+      "levels": [
+        {
+          "title": "Where to get help",
+          "persona": "Mo, 17, whose family's income has dropped.",
+          "steps": [
+            {
+              "kind": "question",
+              "prompt": "Some broadband and mobile companies offer cheaper deals to people on certain benefits.",
+              "topic": "social tariffs",
+              "options": [
+                {
+                  "text": "True",
+                  "explanation": "{{fact:socialTariffs}}",
+                  "effects": {},
+                  "correct": true
+                },
+                {
+                  "text": "False",
+                  "explanation": "{{fact:socialTariffs}}",
+                  "effects": {},
+                  "correct": false
+                }
+              ],
+              "id": "c10l1s1"
+            },
+            {
+              "kind": "question",
+              "prompt": "Where can you get free debt advice?",
+              "topic": "debt advice",
+              "options": [
+                {
+                  "text": "Free debt advice charities",
+                  "explanation": "{{fact:debtAdvice}}",
+                  "effects": {},
+                  "correct": true
+                },
+                {
+                  "text": "A company that charges a big fee",
+                  "explanation": "You never need to pay for good debt advice.",
+                  "effects": {},
+                  "correct": false
+                },
+                {
+                  "text": "Nowhere, you have to sort it alone",
+                  "explanation": "You don't. Free help exists.",
+                  "effects": {},
+                  "correct": false
+                }
+              ],
+              "id": "c10l1s2"
+            },
+            {
+              "kind": "event",
+              "prompt": "Money is tight this month.",
+              "topic": "getting help early",
+              "options": [
+                {
+                  "text": "Talk to my bank or a trusted adult early",
+                  "explanation": "Banks have teams to help, and talking early gives you more options.",
+                  "effects": {
+                    "wisdom": 15,
+                    "resilience": 10,
+                    "money": 0
+                  }
+                },
+                {
+                  "text": "Use a free benefits calculator with my family",
+                  "explanation": "{{fact:benefitsCheck}}",
+                  "effects": {
+                    "wisdom": 15,
+                    "money": 0
+                  }
+                },
+                {
+                  "text": "Hide it and hope it gets better",
+                  "explanation": "Problems usually grow when hidden. Asking for help is a strength.",
+                  "effects": {
+                    "resilience": -15,
+                    "money": 0
+                  }
+                }
+              ],
+              "id": "c10l1s3"
+            }
+          ],
+          "learned": [
+            "Social tariffs can cut bills.",
+            "Debt advice is free.",
+            "Talk early: there are more options."
+          ],
+          "id": "c10l1"
+        }
+      ]
+    }
+  ]
+}

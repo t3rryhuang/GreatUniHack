@@ -38,15 +38,17 @@ final class RemoteArenaService: ArenaServicing {
         return arenas
     }
 
-    func create(name: String, mode: ArenaMode, target: Double, stake: Double, vice: SpendingCategory?, endDate: Date) async throws -> Arena {
+    func create(name: String, mode: ArenaMode, target: Double, stake: Double, vice: SpendingCategory?, endDate: Date, teen: Bool) async throws -> Arena {
         let headers = try headers
         // Check funds before creating so we never leave an arena without a stake.
-        let account = try await savings.account()
-        guard account.balance >= stake else { throw ServiceError.insufficientFunds }
+        if stake > 0 {
+            let account = try await savings.account()
+            guard account.balance >= stake else { throw ServiceError.insufficientFunds }
+        }
         let body = CreateBody(name: name, mode: mode.rawValue, targetAmount: target, stakeAmount: stake,
-                              viceCategory: vice?.rawValue, endDate: endDate)
+                              viceCategory: vice?.rawValue, endDate: endDate, teen: teen)
         let arena: Arena = try await client.send("POST", "arenas", body: body, headers: headers)
-        _ = try await savings.withdrawStake(stake, reference: "ARENA \(arena.joinCode)")
+        if stake > 0 { _ = try await savings.withdrawStake(stake, reference: "ARENA \(arena.joinCode)") }
         return arena
     }
 
@@ -61,11 +63,13 @@ final class RemoteArenaService: ArenaServicing {
     func join(code: String) async throws -> Arena {
         let headers = try headers
         let preview = try await preview(code: code)
-        let account = try await savings.account()
-        guard account.balance >= preview.stakeAmount else { throw ServiceError.insufficientFunds }
+        if preview.stakeAmount > 0 {
+            let account = try await savings.account()
+            guard account.balance >= preview.stakeAmount else { throw ServiceError.insufficientFunds }
+        }
         do {
             let arena: Arena = try await client.send("POST", "arenas/join", body: ["code": code], headers: headers)
-            _ = try await savings.withdrawStake(arena.stakeAmount, reference: "ARENA \(code)")
+            if arena.stakeAmount > 0 { _ = try await savings.withdrawStake(arena.stakeAmount, reference: "ARENA \(code)") }
             return arena
         } catch let error as BackendError {
             throw map(error)
@@ -97,20 +101,8 @@ final class RemoteArenaService: ArenaServicing {
 
     /// The caller's own progress for this arena, computed from their transactions (same rules as the mock).
     static func progress(for arena: Arena, transactions: [Transaction]) -> ProgressBody {
-        let inPeriod = transactions.filter { $0.date >= arena.startDate && $0.date <= min(arena.endDate, .now) }
-        switch arena.mode {
-        case .budgetGuardian:
-            let spend = inPeriod.filter { $0.isExpense && ![.rent, .transfer, .utilities].contains($0.category) }
-                .reduce(0) { $0 + $1.spend }
-            return ProgressBody(currentSpend: spend, currentSavings: 0)
-        case .viceStreak:
-            let vice = arena.viceCategory ?? .coffee
-            let spend = inPeriod.filter { $0.category == vice && $0.isExpense }.reduce(0) { $0 + $1.spend }
-            return ProgressBody(currentSpend: spend, currentSavings: 0)
-        case .savingsSprint:
-            let saved = inPeriod.filter { $0.category == .transfer && $0.isExpense }.reduce(0) { $0 + $1.spend }
-            return ProgressBody(currentSpend: 0, currentSavings: saved)
-        }
+        let p = ArenaRules.progress(for: arena, transactions: transactions)
+        return ProgressBody(currentSpend: p.spend, currentSavings: p.savings, baselineSpend: p.baseline, personalTarget: p.personalTarget)
     }
 
     /// If another member settled an arena we won, pay the pot into our savings account once.
@@ -122,7 +114,7 @@ final class RemoteArenaService: ArenaServicing {
     }
 
     private func credit(_ amount: Double, reference: String) async throws {
-        guard !paidReferences.contains(reference) else { return }
+        guard amount > 0, !paidReferences.contains(reference) else { return }
         _ = try await savings.depositPayout(amount, reference: reference)
         paidReferences.insert(reference)
         LocalStore.save(paidReferences, to: paidStoreName)
@@ -143,11 +135,17 @@ final class RemoteArenaService: ArenaServicing {
         let stakeAmount: Double
         let viceCategory: String?
         let endDate: Date
+        /// Older backends ignore it.
+        let teen: Bool
     }
 
     struct ProgressBody: Encodable {
         let currentSpend: Double
         let currentSavings: Double
+        /// Most Improved and teen Budget Guardian; older backends ignore it.
+        let baselineSpend: Double?
+        /// Teen Savings Sprint; older backends ignore it.
+        let personalTarget: Double?
     }
 
     struct SettleResponse: Decodable {

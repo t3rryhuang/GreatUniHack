@@ -10,6 +10,7 @@ struct ProfileView: View {
     @State private var showSavings = false
     @State private var showUpgrade = false
     @State private var showAddTransaction = false
+    @State private var isSwitchingStage = false
     @State private var showReport = false
 
     var body: some View {
@@ -21,10 +22,46 @@ struct ProfileView: View {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(user.name).font(.novaSection).foregroundStyle(NovaColor.heading)
                             Text(user.email).font(.novaCallout).foregroundStyle(NovaColor.body)
+                            if model.isTeen {
+                                Text("Teen mode")
+                                    .font(.novaCaption.weight(.semibold))
+                                    .foregroundStyle(NovaColor.action)
+                                    .padding(.horizontal, Spacing.xs).padding(.vertical, 2)
+                                    .background(NovaColor.lilac, in: Capsule())
+                            }
                         }
                     }
                     .padding(.vertical, Spacing.xxs)
                     .accessibilityElement(children: .combine)
+                }
+            }
+
+            if let readiness = model.readiness {
+                Section {
+                    NavigationLink { ReadinessView() } label: {
+                        HStack(spacing: Spacing.md) {
+                            ReadinessCharacter(rank: readiness.score.rank, size: 52)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Readiness Score").font(.novaCaption).foregroundStyle(NovaColor.body)
+                                Text("\(readiness.score.total) · \(readiness.score.rank.title)")
+                                    .font(.novaSection).foregroundStyle(NovaColor.heading).monospacedDigit()
+                            }
+                        }
+                        .accessibilityElement(children: .ignore)
+                        .accessibilityLabel("Readiness Score \(readiness.score.total), \(readiness.score.rank.title)")
+                    }
+                } footer: {
+                    Text(ReadinessScore.disclaimer)
+                }
+            }
+
+            if model.isTeen {
+                Section("Teen") {
+                    NavigationLink { MoneyQuestHubView() } label: { Label("Money Quest", systemImage: "gamecontroller.fill") }
+                    NavigationLink { PiggyBankView() } label: { Label("Piggy Bank", systemImage: "sterlingsign.circle.fill") }
+                    NavigationLink { FamilyView() } label: { Label("Family loans and bills", systemImage: "person.2.fill") }
+                    NavigationLink { ParentPreviewView() } label: { Label("What your parent sees", systemImage: "eye.fill") }
+                    NavigationLink { GraduationView() } label: { Label("Road to 18", systemImage: "graduationcap.fill") }
                 }
             }
 
@@ -88,6 +125,53 @@ struct ProfileView: View {
                 Text("Your data")
             } footer: {
                 Text("The report is a one-page PDF summary you can save or share. Imports support PDF, JSON and CSV statements.")
+            }
+
+            Section {
+                Picker("Profile", selection: Binding(
+                    get: { model.stage == .adult ? .adult : (model.demoProfile == .teenA ? .teenA : .teenB) },
+                    set: { profile in
+                        Task {
+                            isSwitchingStage = true
+                            await model.switchDemoProfile(to: profile)
+                            isSwitchingStage = false
+                        }
+                    }
+                )) {
+                    ForEach(DemoProfile.selectable) { Text($0.title).tag($0) }
+                }
+                .pickerStyle(.segmented)
+                .disabled(isSwitchingStage)
+                .accessibilityLabel("Demo profile")
+                Text(model.stage == .adult ? DemoProfile.adult.subtitle : (model.demoProfile == .teenA ? DemoProfile.teenA : DemoProfile.teenB).subtitle)
+                    .font(.novaCaption).foregroundStyle(NovaColor.body)
+                Button {
+                    Task { await model.completeQuestForDemo() }
+                } label: {
+                    Label("Complete today's quest", systemImage: "checkmark.circle")
+                }
+                .disabled(model.readiness?.quest?.status != .pending)
+                if model.isTeen {
+                    Button {
+                        dismiss()
+                        Task { await model.simulateEighteenthBirthday() }
+                    } label: {
+                        Label("Simulate 18th birthday", systemImage: "birthday.cake")
+                    }
+                }
+                #if DEBUG
+                NavigationLink { FairnessCheckView() } label: { Label("Fairness check", systemImage: "scalemass") }
+                #endif
+                if isSwitchingStage {
+                    HStack(spacing: Spacing.xs) {
+                        ProgressView()
+                        Text("Loading \(model.stage.title.lowercased()) demo data…").font(.novaCallout).foregroundStyle(NovaColor.body)
+                    }
+                }
+            } header: {
+                Text("Demo")
+            } footer: {
+                Text("Teen A and Teen B have the same habits but very different money. Switching loads matching demo data. Quests are normally checked at the end of the day.")
             }
 
             Section {

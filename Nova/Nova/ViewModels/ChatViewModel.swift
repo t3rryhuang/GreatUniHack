@@ -5,6 +5,8 @@ import Observation
 final class ChatViewModel {
     /// The original app kept the last 20 messages as context.
     static let historyLimit = 20
+    static let teenStarters = ["How can I save from my wages?", "What is the Readiness Score?",
+                               "How do I split a bill fairly?", "What's on a payslip?"]
     static let starters = ["Where does most of my money go?", "Can I afford a £200 weekend away?",
                            "How much will I spend this week?", "How long would my savings last?"]
 
@@ -25,7 +27,7 @@ final class ChatViewModel {
         defer { isTyping = false }
         do {
             let history = Array(messages.suffix(Self.historyLimit))
-            let reply = try await model.services.chat.reply(to: message, history: history, summary: model.summary)
+            let reply = try await model.services.chat.reply(to: message, history: history, summary: model.summary, stage: model.stage)
             messages.append(ChatMessage(role: .assistant, text: reply))
             if speakReplies { model.services.voice.speak(reply) }
         } catch {

@@ -5,6 +5,7 @@ import SwiftUI
 struct SimulatorView: View {
     @Environment(AppModel.self) private var model
     @State private var viewModel = SimulatorViewModel()
+    @State private var sandbox = SandboxViewModel()
     @FocusState private var questionFocused: Bool
 
     var body: some View {
@@ -13,6 +14,7 @@ struct SimulatorView: View {
                 if !model.hasData {
                     NoDataView()
                 } else {
+                    if model.isTeen { SandboxCard(viewModel: sandbox) }
                     RunwaySliderCard(viewModel: viewModel, summary: model.summary)
                     askCard
                     ForEach(viewModel.results) { result in

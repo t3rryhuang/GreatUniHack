@@ -11,6 +11,13 @@ struct ServiceContainer {
     let arenas: ArenaServicing
     let savings: SavingsServicing
     let subscription: SubscriptionServicing
+    let readiness: ReadinessServicing
+    let family: FamilyServicing
+    let game: GameServicing
+    let leagues: LeagueServicing
+    let explorer: ExplorerServicing
+    let stylist: StylistServicing
+    let park: CommunityParkServicing
 
     static func mock() -> ServiceContainer {
         let auth = MockAuthService()
@@ -23,12 +30,19 @@ struct ServiceContainer {
             voice: SystemVoiceService(),
             arenas: MockArenaService(savings: savings, auth: auth),
             savings: savings,
-            subscription: MockSubscriptionService()
+            subscription: MockSubscriptionService(),
+            readiness: LocalReadinessService(),
+            family: LocalFamilyService(),
+            game: LocalGameService(),
+            leagues: LocalLeagueService(),
+            explorer: LocalExplorerService(),
+            stylist: MockStylistService(),
+            park: MockCommunityParkService()
         )
     }
 
     /// Arenas, insights, chat and read-aloud go to the backend. Sign-in, transactions,
-    /// the savings account and the Pro plan stay on-device.
+    /// the savings account, the Pro plan and the Readiness Score stay on-device.
     static func live(baseURL: URL) -> ServiceContainer {
         let client = BackendClient(baseURL: baseURL)
         let auth = MockAuthService()
@@ -41,7 +55,14 @@ struct ServiceContainer {
             voice: ElevenLabsVoiceService(client: client),
             arenas: RemoteArenaService(client: client, savings: savings, auth: auth),
             savings: savings,
-            subscription: MockSubscriptionService()
+            subscription: MockSubscriptionService(),
+            readiness: LocalReadinessService(),
+            family: LocalFamilyService(),
+            game: LocalGameService(),
+            leagues: LocalLeagueService(),
+            explorer: LocalExplorerService(),
+            stylist: RemoteStylistService(client: client),
+            park: RemoteCommunityParkService(client: client, auth: auth)
         )
     }
 }
