@@ -16,6 +16,7 @@ struct HomeView: View {
                     if let briefing = viewModel.briefing {
                         WeatherHero(briefing: briefing)
                     }
+                    if model.hardshipScale < 1 { HardshipNotice() }
                     if let readiness = model.readiness {
                         NavigationLink { ReadinessView() } label: { ReadinessSummaryCard(snapshot: readiness) }
                             .buttonStyle(.plain)

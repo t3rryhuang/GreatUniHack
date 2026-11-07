@@ -38,7 +38,7 @@ final class RemoteArenaService: ArenaServicing {
         return arenas
     }
 
-    func create(name: String, mode: ArenaMode, target: Double, stake: Double, vice: SpendingCategory?, endDate: Date) async throws -> Arena {
+    func create(name: String, mode: ArenaMode, target: Double, stake: Double, vice: SpendingCategory?, endDate: Date, teen: Bool) async throws -> Arena {
         let headers = try headers
         // Check funds before creating so we never leave an arena without a stake.
         if stake > 0 {
@@ -46,7 +46,7 @@ final class RemoteArenaService: ArenaServicing {
             guard account.balance >= stake else { throw ServiceError.insufficientFunds }
         }
         let body = CreateBody(name: name, mode: mode.rawValue, targetAmount: target, stakeAmount: stake,
-                              viceCategory: vice?.rawValue, endDate: endDate)
+                              viceCategory: vice?.rawValue, endDate: endDate, teen: teen)
         let arena: Arena = try await client.send("POST", "arenas", body: body, headers: headers)
         if stake > 0 { _ = try await savings.withdrawStake(stake, reference: "ARENA \(arena.joinCode)") }
         return arena
@@ -102,7 +102,7 @@ final class RemoteArenaService: ArenaServicing {
     /// The caller's own progress for this arena, computed from their transactions (same rules as the mock).
     static func progress(for arena: Arena, transactions: [Transaction]) -> ProgressBody {
         let p = ArenaRules.progress(for: arena, transactions: transactions)
-        return ProgressBody(currentSpend: p.spend, currentSavings: p.savings, baselineSpend: p.baseline)
+        return ProgressBody(currentSpend: p.spend, currentSavings: p.savings, baselineSpend: p.baseline, personalTarget: p.personalTarget)
     }
 
     /// If another member settled an arena we won, pay the pot into our savings account once.
@@ -135,13 +135,17 @@ final class RemoteArenaService: ArenaServicing {
         let stakeAmount: Double
         let viceCategory: String?
         let endDate: Date
+        /// Older backends ignore it.
+        let teen: Bool
     }
 
     struct ProgressBody: Encodable {
         let currentSpend: Double
         let currentSavings: Double
-        /// Most Improved only; older backends ignore it.
+        /// Most Improved and teen Budget Guardian; older backends ignore it.
         let baselineSpend: Double?
+        /// Teen Savings Sprint; older backends ignore it.
+        let personalTarget: Double?
     }
 
     struct SettleResponse: Decodable {

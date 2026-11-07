@@ -30,6 +30,11 @@ struct MoneyQuestHubView: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
 
+            NavigationLink { LeagueView() } label: {
+                RowLink(title: "Leagues", subtitle: "Friends and school, ranked by points and improvement", symbol: "person.3.fill")
+            }
+            .buttonStyle(.plain)
+
             if content.chapters.isEmpty {
                 NovaNotice(kind: .error, title: "Levels not found", message: "chapters.json is missing from the app.")
             }

@@ -230,10 +230,21 @@ final class AppModel {
             summary: summary,
             savingsBalance: savingsAccount?.balance ?? 0,
             familyPayments: isTeen ? family.scheduledPayments() + promisePayments() : [],
-            accountStart: min(user?.memberSince ?? .now, earliest)
+            accountStart: min(user?.memberSince ?? .now, earliest),
+            stage: stage,
+            savingDeposits: savingDeposits(),
+            hardshipScale: hardshipScale
         )
         readiness = await services.readiness.evaluate(input)
         readinessProgress = await services.readiness.progress()
+    }
+
+    /// Any deposit into savings, any amount: Piggy Bank deposits and transfers to the saver.
+    private func savingDeposits() -> [Date] {
+        let transfers = transactions.filter {
+            $0.isExpense && $0.category == .transfer && ($0.description.localizedCaseInsensitiveContains("saver") || $0.description.localizedCaseInsensitiveContains("piggy"))
+        }.map(\.date)
+        return transfers + (piggy?.deposits.map(\.date) ?? [])
     }
 
     /// Weekly "promise to myself" transfers, scored like bills.

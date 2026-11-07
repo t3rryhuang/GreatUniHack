@@ -34,6 +34,11 @@ struct CreateArenaView: View {
                     } else if viewModel.mode == .mostImproved {
                         Text("Each person is compared with their own spending in the same number of days before the arena started.")
                             .font(.novaCallout).foregroundStyle(NovaColor.body)
+                    } else if model.isTeen {
+                        Text(viewModel.mode == .budgetGuardian
+                             ? "Everyone gets a personal limit from their own usual spending. The biggest % under their own limit wins."
+                             : "Everyone gets a personal target: 10% of their own income over the arena. First to reach their own target wins.")
+                            .font(.novaCallout).foregroundStyle(NovaColor.body)
                     } else {
                         Stepper(value: $viewModel.target, in: 25...5_000, step: 25) {
                             HStack {

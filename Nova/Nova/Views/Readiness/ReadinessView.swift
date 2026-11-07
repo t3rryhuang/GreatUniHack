@@ -9,6 +9,7 @@ struct ReadinessView: View {
     var body: some View {
         NovaScreen {
             if let snapshot = model.readiness {
+                if model.hardshipScale < 1 { HardshipNotice() }
                 hero(snapshot)
                 StreakCard(snapshot: snapshot)
                 NovaCard {
@@ -21,7 +22,12 @@ struct ReadinessView: View {
                         .font(.novaCaption).foregroundStyle(NovaColor.muted)
                 }
                 ScoreHistoryCard(history: snapshot.history, change: snapshot.monthChange)
+                PerksCard(rank: snapshot.score.rank)
                 if model.isTeen {
+                    NavigationLink { LeagueView() } label: {
+                        RowLink(title: "Leagues", subtitle: "Ranked by points and improvement, never money", symbol: "person.3.fill")
+                    }
+                    .buttonStyle(.plain)
                     NavigationLink { GraduationView() } label: {
                         RowLink(title: "Road to 18", subtitle: "Your graduation checklist and Readiness Report", symbol: "graduationcap.fill")
                     }
@@ -200,6 +206,43 @@ private struct StatDetailSheet: View {
                 Button("Use average") { Task { await viewModel.useAverageLimit(model: model) } }
                     .buttonStyle(.novaSecondary)
             }
+        }
+    }
+}
+
+/// Shown when income dropped by more than 30% month on month (hardship protection).
+struct HardshipNotice: View {
+    var body: some View {
+        NovaNotice(kind: .info, title: "Your income dropped this month",
+                   message: "That happens. We've eased your Piggy Bank goal, and your weekly limit now follows your last 4 weeks. Your score won't punish a hard month.")
+    }
+}
+
+/// Perks unlocked by rank (behaviour), never by balance.
+private struct PerksCard: View {
+    let rank: ReadinessRank
+
+    var body: some View {
+        let order = ReadinessRank.allCases
+        let current = order.firstIndex(of: rank) ?? 0
+        NovaCard {
+            SectionHeader(title: "Rank perks", systemImage: "gift.fill")
+            ForEach(RankPerk.all) { perk in
+                let unlocked = (order.firstIndex(of: perk.rank) ?? 0) <= current
+                HStack(spacing: Spacing.sm) {
+                    Image(systemName: unlocked ? perk.symbol : "lock.fill")
+                        .foregroundStyle(unlocked ? perk.rank.color : NovaColor.muted)
+                        .frame(width: 28)
+                        .accessibilityHidden(true)
+                    Text(perk.title).font(.novaCallout).foregroundStyle(unlocked ? NovaColor.heading : NovaColor.muted)
+                    Spacer()
+                    Text(perk.rank.title).font(.novaCaption).foregroundStyle(NovaColor.body)
+                }
+                .accessibilityElement(children: .combine)
+                .accessibilityValue(unlocked ? "Unlocked" : "Locked")
+            }
+            Text("Perks come from your rank, which comes from your habits, never your balance.")
+                .font(.novaCaption).foregroundStyle(NovaColor.muted)
         }
     }
 }

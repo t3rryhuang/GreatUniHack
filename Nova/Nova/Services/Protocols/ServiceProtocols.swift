@@ -97,7 +97,8 @@ extension VoiceServicing {
 /// Arenas: create, join, sync spending and settle. Replaces Supabase + Solana.
 protocol ArenaServicing: AnyObject, Sendable {
     func myArenas() async throws -> [Arena]
-    func create(name: String, mode: ArenaMode, target: Double, stake: Double, vice: SpendingCategory?, endDate: Date) async throws -> Arena
+    /// `teen` makes a teen arena: no money, personal baselines and targets, % only.
+    func create(name: String, mode: ArenaMode, target: Double, stake: Double, vice: SpendingCategory?, endDate: Date, teen: Bool) async throws -> Arena
     func join(code: String) async throws -> Arena
     func preview(code: String) async throws -> Arena
     func sync(arenaID: UUID, transactions: [Transaction]) async throws -> Arena
@@ -165,4 +166,9 @@ protocol GameServicing: AnyObject, Sendable {
     func progress() async -> GameProgress
     func completeLevel(_ levelID: String, in chapter: QuestChapter, correctAnswers: Int) async -> LevelReward
     func resetDemo(stage: LifeStage) async
+}
+
+/// Friend and school leagues (Teen mode). On-device demo data in both containers.
+protocol LeagueServicing: AnyObject, Sendable {
+    func leagues(me: LeagueEntry) async -> [League]
 }

@@ -310,7 +310,8 @@ enum MockDataFactory {
                     ArenaMember(name: "Maya Ahmed", currentSpend: 61, lastSyncedAt: now, baselineSpend: 80),
                     ArenaMember(name: "Leo Byrne", currentSpend: 70, lastSyncedAt: now, baselineSpend: 76),
                     ArenaMember(name: "Zara Khan", currentSpend: 49, lastSyncedAt: now, baselineSpend: 72)
-                ]
+                ],
+                teen: true
             ),
             Arena(
                 name: "Festival Fund",
@@ -322,9 +323,10 @@ enum MockDataFactory {
                 joinCode: "830571",
                 status: .active,
                 members: [
-                    ArenaMember(name: currentUser.name, isCurrentUser: true, currentSavings: 80, lastSyncedAt: now),
-                    ArenaMember(name: "Maya Ahmed", currentSavings: 95, lastSyncedAt: now)
-                ]
+                    ArenaMember(name: currentUser.name, isCurrentUser: true, currentSavings: 80, lastSyncedAt: now, personalTarget: 120),
+                    ArenaMember(name: "Maya Ahmed", currentSavings: 9, lastSyncedAt: now, personalTarget: 15)
+                ],
+                teen: true
             ),
             Arena(
                 name: "October Budget Battle",
@@ -336,11 +338,12 @@ enum MockDataFactory {
                 joinCode: "275139",
                 status: .completed,
                 members: [
-                    ArenaMember(id: teenWinnerID, name: currentUser.name, isCurrentUser: true, currentSpend: 104, lastSyncedAt: days(-8)),
-                    ArenaMember(name: "Leo Byrne", currentSpend: 117, lastSyncedAt: days(-8)),
-                    ArenaMember(name: "Zara Khan", currentSpend: 131, exceededAt: days(-12), lastSyncedAt: days(-8))
+                    ArenaMember(id: teenWinnerID, name: currentUser.name, isCurrentUser: true, currentSpend: 104, lastSyncedAt: days(-8), baselineSpend: 140),
+                    ArenaMember(name: "Leo Byrne", currentSpend: 21, lastSyncedAt: days(-8), baselineSpend: 26),
+                    ArenaMember(name: "Zara Khan", currentSpend: 131, exceededAt: days(-12), lastSyncedAt: days(-8), baselineSpend: 120)
                 ],
-                winnerID: teenWinnerID
+                winnerID: teenWinnerID,
+                teen: true
             )
         ]
     }

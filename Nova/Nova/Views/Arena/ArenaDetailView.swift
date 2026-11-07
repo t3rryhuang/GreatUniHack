@@ -37,6 +37,10 @@ struct ArenaDetailView: View {
                     Label("Vice: \(vice.rawValue)", systemImage: vice.symbol).font(.novaCallout).foregroundStyle(NovaColor.heading)
                 } else if arena.mode == .mostImproved {
                     Text("Compared with: your own previous period").font(.novaCallout).foregroundStyle(NovaColor.heading)
+                } else if arena.isTeenArena {
+                    Text(arena.mode == .budgetGuardian ? "Limit: your own usual spending" : "Target: 10% of your own income")
+                        .font(.novaCallout).foregroundStyle(NovaColor.heading)
+                    Text("Teen arena: standings show % and ranks only, never anyone's £.").font(.novaCaption).foregroundStyle(NovaColor.muted)
                 } else {
                     Text("\(arena.mode.targetLabel): \(arena.targetAmount.gbpWhole)").font(.novaCallout).foregroundStyle(NovaColor.heading)
                 }
@@ -161,6 +165,13 @@ private struct StandingsCard: View {
     }
 
     private func progress(for member: ArenaMember) -> Double {
+        if arena.isTeenArena {
+            switch arena.mode {
+            case .budgetGuardian: return member.baselineSpend.map { $0 > 0 ? member.currentSpend / $0 : 0 } ?? 0
+            case .savingsSprint: return member.ownTargetProgress ?? 0
+            default: return 0
+            }
+        }
         guard arena.targetAmount > 0 else { return 0 }
         return (arena.mode == .savingsSprint ? member.currentSavings : member.currentSpend) / arena.targetAmount
     }
@@ -168,7 +179,7 @@ private struct StandingsCard: View {
     @ViewBuilder private func status(for member: ArenaMember) -> some View {
         if member.isEliminated {
             Text("Out").font(.novaCaption).foregroundStyle(NovaColor.error)
-        } else if ArenaRules.isAtRisk(member, in: arena) && arena.targetAmount > 0 {
+        } else if ArenaRules.isAtRisk(member, in: arena) && (arena.targetAmount > 0 || arena.isTeenArena) {
             Text("Close to the limit").font(.novaCaption).foregroundStyle(NovaColor.warning)
         } else if let synced = member.lastSyncedAt {
             Text("Synced \(synced.formatted(.relative(presentation: .named)))").font(.novaCaption).foregroundStyle(NovaColor.body)
@@ -233,7 +244,8 @@ struct ArenaResultsView: View {
 
     /// The figure shown next to a member: saved, spent, or % cut for Most Improved.
     static func value(for member: ArenaMember, in arena: Arena) -> String {
-        switch arena.mode {
+        if arena.isTeenArena { return ArenaRules.teenValue(for: member, in: arena) }
+        return switch arena.mode {
         case .savingsSprint: member.currentSavings.gbpWhole
         case .mostImproved: member.reduction.map { "\($0 >= 0 ? "−" : "+")\(abs($0).percent)" } ?? "–"
         case .budgetGuardian, .viceStreak: member.currentSpend.gbp

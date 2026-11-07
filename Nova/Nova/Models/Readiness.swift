@@ -35,8 +35,8 @@ enum ReadinessStat: String, Codable, CaseIterable, Identifiable, Sendable {
         switch self {
         case .reliability: "How often your bills and repayments are paid on time (within 3 days of the due date)."
         case .balance: "How many of the last 8 weeks your spending stayed under your weekly limit."
-        case .endurance: "Your daily quest streak and how long you've been building a money history."
-        case .resilience: "How many months your savings would cover your normal spending."
+        case .endurance: "Your daily quest streak, your saving streak (any amount) and how long you've been building a money history."
+        case .resilience: "How long your savings would cover your own spending: months for adults, weeks of essentials for teens (2 weeks is full marks)."
         case .wisdom: "Money Quest levels, the borrowing sandbox, what-ifs and daily quests."
         }
     }
@@ -160,6 +160,11 @@ struct ReadinessInput: Sendable {
     var familyPayments: [ScheduledPayment]
     var accountStart: Date
     var now: Date = .now
+    var stage: LifeStage = .adult
+    /// Dates of saving deposits (Piggy Bank and transfers to savings), any amount.
+    var savingDeposits: [Date] = []
+    /// Below 1 during hardship (see `hardshipScale`).
+    var hardshipScale: Double = 1
 }
 
 /// The result of an evaluation, shown on the Readiness screen.
@@ -205,7 +210,6 @@ enum ReadinessRules {
     static let streakCap = 30
     static let ageCapMonths = 12.0
     static let runwayTargetMonths = 6.0
-    static let bufferTarget = 100.0
 
     // MARK: Score
 
@@ -213,16 +217,21 @@ enum ReadinessRules {
         let bills = recurringBills(in: input.transactions, now: input.now)
         let payments = (bills.flatMap(\.payments) + input.familyPayments).sorted { $0.due < $1.due }
         let rel = reliability(payments, now: input.now)
-        let bal = balance(input.transactions, limit: progress.weeklyLimit, now: input.now)
-        let end = endurance(streak: progress.streak, accountStart: input.accountStart, now: input.now)
-        let res = resilience(runwayMonths: input.summary.runwayMonths, savings: input.savingsBalance)
+        let bal = balance(input.transactions, limit: progress.weeklyLimit, now: input.now, recentWeeksOnly: input.hardshipScale < 1)
+        let savingStreak = PiggyRules.savingStreakMonths(input.savingDeposits, now: input.now)
+        let end = endurance(streak: progress.streak, savingStreakMonths: savingStreak, accountStart: input.accountStart, now: input.now)
+        let essentials = essentialWeekly(input.transactions, now: input.now)
+        let covered = weeksCovered(savings: input.savingsBalance, essentialWeekly: essentials)
+        let res = input.stage == .teen ? teenResilience(weeksCovered: covered) : resilience(runwayMonths: input.summary.runwayMonths)
         let wis = wisdom(progress)
         let months = max(0, Calendar.current.dateComponents([.month], from: input.accountStart, to: input.now).month ?? 0)
         let score = ReadinessScore(stats: [
             StatScore(stat: .reliability, points: rel.points, detail: rel.total == 0 ? "No bills found yet" : "\(rel.onTime) of \(rel.total) paid on time"),
             StatScore(stat: .balance, points: bal.points, detail: "\(bal.weeksUnder) of \(balanceWeeks) weeks under \(bal.limit.gbpWhole)"),
-            StatScore(stat: .endurance, points: end, detail: "\(progress.streak)-day streak, \(months) months of history"),
-            StatScore(stat: .resilience, points: res, detail: String(format: "%.1f months of spending saved", input.summary.runwayMonths)),
+            StatScore(stat: .endurance, points: end, detail: "\(progress.streak)-day streak, \(savingStreak)-month saving streak, \(months) months of history"),
+            StatScore(stat: .resilience, points: res, detail: input.stage == .teen
+                      ? String(format: "%.1f weeks of your essentials covered", min(covered, 99))
+                      : String(format: "%.1f months of spending saved", input.summary.runwayMonths)),
             StatScore(stat: .wisdom, points: wis, detail: "\(progress.moneyQuestLevels) Money Quest levels, \(progress.whatIfs) what-ifs, \(progress.questsCompleted) quests\(progress.sandboxDone ? ", sandbox done" : "")")
         ])
         return (score, bills, payments, bal.weekly, bal.limit)
@@ -302,32 +311,60 @@ enum ReadinessRules {
         }
     }
 
-    /// Share of the last 8 weeks under the weekly limit (default: the 8-week average), 0-200.
-    static func balance(_ transactions: [Transaction], limit: Double?, now: Date) -> (points: Int, weeksUnder: Int, limit: Double, weekly: [Double]) {
+    /// Share of the last 8 weeks under the weekly limit (default: the person's own 8-week
+    /// average, so it's always relative to them), 0-200. During hardship the default limit
+    /// comes from the last 4 weeks only, so it adapts to the new situation quickly.
+    static func balance(_ transactions: [Transaction], limit: Double?, now: Date, recentWeeksOnly: Bool = false) -> (points: Int, weeksUnder: Int, limit: Double, weekly: [Double]) {
         let weekly = weeklyTotals(transactions, now: now)
         guard weekly.contains(where: { $0 > 0 }) else { return (0, 0, limit ?? 0, weekly) }
-        let effective = limit ?? (weekly.reduce(0, +) / Double(weekly.count)).rounded()
+        let basis = recentWeeksOnly ? Array(weekly.suffix(4)) : weekly
+        let effective = limit ?? (basis.reduce(0, +) / Double(basis.count)).rounded()
         let under = weekly.filter { $0 <= effective }.count
         return (Int((Double(under) / Double(weekly.count) * 200).rounded()), under, effective, weekly)
     }
 
     // MARK: Endurance (length of history)
 
-    /// Up to 100 for the streak (capped at 30 days) and 100 for account age (capped at 12 months).
-    static func endurance(streak: Int, accountStart: Date, now: Date) -> Int {
-        let streakPart = Double(min(max(streak, 0), streakCap)) / Double(streakCap) * 100
+    static let savingStreakCapMonths = 6
+
+    /// Up to 70 for the daily quest streak (capped at 30 days), 30 for the saving streak
+    /// (months with any deposit, any amount, capped at 6) and 100 for account age (capped at 12 months).
+    static func endurance(streak: Int, savingStreakMonths: Int = 0, accountStart: Date, now: Date) -> Int {
+        let streakPart = Double(min(max(streak, 0), streakCap)) / Double(streakCap) * 70
+        let savingPart = Double(min(max(savingStreakMonths, 0), savingStreakCapMonths)) / Double(savingStreakCapMonths) * 30
         let months = max(0, now.timeIntervalSince(accountStart) / (30.44 * 86_400))
         let agePart = min(months, ageCapMonths) / ageCapMonths * 100
-        return Int((streakPart + agePart).rounded())
+        return Int((streakPart + savingPart + agePart).rounded())
     }
 
     // MARK: Resilience (affordability)
 
-    /// 0 months of runway is 0 points and 6+ months is 170, plus up to 30 for having started a buffer.
-    static func resilience(runwayMonths: Double, savings: Double) -> Int {
-        let runway = min(max(runwayMonths, 0), runwayTargetMonths) / runwayTargetMonths * 170
-        let buffer = min(max(savings, 0), bufferTarget) / bufferTarget * 30
-        return Int((runway + buffer).rounded())
+    /// Adults: 0 months of runway (savings ÷ own monthly spending) is 0 points, 6+ months is 200.
+    /// Relative to the person's own spending; a bigger £ balance alone earns nothing extra.
+    static func resilience(runwayMonths: Double) -> Int {
+        Int((min(max(runwayMonths, 0), runwayTargetMonths) / runwayTargetMonths * 200).rounded())
+    }
+
+    static let teenTargetWeeks = 2.0
+    static let essentialCategories: Set<SpendingCategory> = [.groceries, .transport, .utilities, .rent, .healthcare, .education]
+
+    /// Teens: weeks of their OWN essential spending that savings would cover; 2 weeks is full points.
+    static func teenResilience(weeksCovered: Double) -> Int {
+        Int((min(max(weeksCovered, 0), teenTargetWeeks) / teenTargetWeeks * 200).rounded())
+    }
+
+    /// Average weekly essential spending over the last 8 weeks (falls back to everyday spending).
+    static func essentialWeekly(_ transactions: [Transaction], now: Date) -> Double {
+        let start = now.addingTimeInterval(-Double(balanceWeeks) * 7 * 86_400)
+        let recent = transactions.filter { $0.isExpense && $0.date >= start && $0.date <= now }
+        let essentials = recent.filter { essentialCategories.contains($0.category) }.reduce(0) { $0 + $1.spend }
+        let total = essentials > 0 ? essentials : recent.filter(isEveryday).reduce(0) { $0 + $1.spend }
+        return total / Double(balanceWeeks)
+    }
+
+    static func weeksCovered(savings: Double, essentialWeekly: Double) -> Double {
+        guard savings > 0 else { return 0 }
+        return essentialWeekly > 0 ? savings / essentialWeekly : teenTargetWeeks
     }
 
     // MARK: Wisdom (restraint and literacy)

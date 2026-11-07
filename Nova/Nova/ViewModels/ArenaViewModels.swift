@@ -75,12 +75,15 @@ final class CreateArenaViewModel {
     static let stakeOptions: [Double] = [0, 5, 10, 20, 50]
 
     var isValid: Bool {
-        !name.trimmingCharacters(in: .whitespaces).isEmpty && endDate > .now && (!mode.usesTarget || target > 0)
+        !name.trimmingCharacters(in: .whitespaces).isEmpty && endDate > .now && (!mode.usesTarget || target > 0 || isTeen)
     }
+    /// Teen arenas use personal limits and targets instead of a shared £ target.
+    private(set) var isTeen = false
 
     /// Teen mode: no stakes, no Vice Streak and no Drinks.
     func configure(for stage: LifeStage) {
         guard stage == .teen else { return }
+        isTeen = true
         stake = 0
         if !ArenaMode.teenModes.contains(mode) { mode = .mostImproved }
         if vice == .drinks { vice = .coffee }
@@ -93,10 +96,11 @@ final class CreateArenaViewModel {
             let arena = try await model.services.arenas.create(
                 name: name.trimmingCharacters(in: .whitespaces),
                 mode: mode,
-                target: mode.usesTarget ? target : 0,
+                target: mode.usesTarget && !model.isTeen ? target : 0,
                 stake: model.isTeen ? 0 : stake,
                 vice: mode == .viceStreak ? vice : nil,
-                endDate: endDate
+                endDate: endDate,
+                teen: model.isTeen
             )
             await model.refreshSavings()
             return arena

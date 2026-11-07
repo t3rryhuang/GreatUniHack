@@ -39,7 +39,7 @@ final class MockArenaService: ArenaServicing {
         return arenas.sorted { ($0.status == .completed ? 1 : 0, $0.endDate) < ($1.status == .completed ? 1 : 0, $1.endDate) }
     }
 
-    func create(name: String, mode: ArenaMode, target: Double, stake: Double, vice: SpendingCategory?, endDate: Date) async throws -> Arena {
+    func create(name: String, mode: ArenaMode, target: Double, stake: Double, vice: SpendingCategory?, endDate: Date, teen: Bool) async throws -> Arena {
         let user = try me
         let code = String(format: "%06d", Int.random(in: 100_000...999_999))
         if stake > 0 { _ = try await savings.withdrawStake(stake, reference: "ARENA \(code)") }
@@ -53,7 +53,8 @@ final class MockArenaService: ArenaServicing {
             endDate: endDate,
             joinCode: code,
             status: .pending,
-            members: [ArenaMember(name: user.name, isCurrentUser: true, lastSyncedAt: .now)]
+            members: [ArenaMember(name: user.name, isCurrentUser: true, lastSyncedAt: .now)],
+            teen: teen ? true : nil
         )
         arenas.insert(arena, at: 0)
         persist()
@@ -89,10 +90,12 @@ final class MockArenaService: ArenaServicing {
                 switch arena.mode {
                 case .budgetGuardian:
                     arena.members[i].currentSpend = max(arena.members[i].currentSpend, mine.spend)
+                    if let baseline = mine.baseline { arena.members[i].baselineSpend = baseline }
                 case .viceStreak:
                     arena.members[i].currentSpend = mine.spend
                 case .savingsSprint:
                     arena.members[i].currentSavings = max(arena.members[i].currentSavings, mine.savings)
+                    if let target = mine.personalTarget { arena.members[i].personalTarget = target }
                 case .mostImproved:
                     arena.members[i].currentSpend = mine.spend
                     if let baseline = mine.baseline { arena.members[i].baselineSpend = baseline }
@@ -104,12 +107,13 @@ final class MockArenaService: ArenaServicing {
             }
 
             let member = arena.members[i]
-            let over = ArenaRules.hasSpendingLimit(arena.mode) && member.currentSpend > arena.targetAmount
+            let over = ArenaRules.hasSpendingLimit(arena.mode) && member.currentSpend > ArenaRules.limit(for: member, in: arena)
             if over && member.exceededAt == nil {
                 arena.members[i].exceededAt = .now
                 if arena.mode == .viceStreak { arena.members[i].isEliminated = true }
             }
-            if arena.mode == .savingsSprint && member.currentSavings >= arena.targetAmount && member.targetReachedAt == nil {
+            let reached = arena.isTeenArena ? (member.ownTargetProgress ?? 0) >= 1 : member.currentSavings >= arena.targetAmount
+            if arena.mode == .savingsSprint && reached && member.targetReachedAt == nil {
                 arena.members[i].targetReachedAt = .now
             }
             arena.members[i].lastSyncedAt = .now
@@ -169,7 +173,8 @@ final class MockArenaService: ArenaServicing {
                 startDate: start, endDate: calendar.date(byAdding: .day, value: 12, to: .now) ?? .now,
                 joinCode: code, status: .active,
                 members: [ArenaMember(name: "Maya Ahmed", currentSpend: 18, baselineSpend: 30),
-                          ArenaMember(name: "Leo Byrne", currentSpend: 22, baselineSpend: 26)]
+                          ArenaMember(name: "Leo Byrne", currentSpend: 22, baselineSpend: 26)],
+                teen: true
             )
         default:
             return nil

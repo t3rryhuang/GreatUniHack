@@ -25,6 +25,10 @@ final class LocalGameService: GameServicing {
             fresh.completedLevels = ["c1l1", "c1l2"]
             fresh.bestCorrect = ["c1l1": 2, "c1l2": 1]
             fresh.totalPoints = 75
+            for (daysAgo, points) in [(2, 40), (4, 35)] {
+                let day = Calendar.current.date(byAdding: .day, value: -daysAgo, to: .now) ?? .now
+                fresh.pointsByDay[MoneyQuestRules.dayKey(day)] = points
+            }
         }
         state = fresh
         persist()
