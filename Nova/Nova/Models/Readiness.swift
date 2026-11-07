@@ -495,3 +495,25 @@ extension ReadinessRules {
         return nil
     }
 }
+
+// MARK: Borrowing sandbox
+
+extension ReadinessRules {
+    /// Monthly repayment for an example loan. APR 0 means interest-free (for example a family loan).
+    static func monthlyPayment(amount: Double, months: Int, apr: Double) -> Double {
+        let n = Double(max(1, months))
+        guard apr > 0 else { return amount / n }
+        let r = apr / 100 / 12
+        return amount * r / (1 - pow(1 + r, -n))
+    }
+
+    /// Reliability points now, if all of `months` new payments are on time, and if one is missed.
+    static func sandboxOutcome(payments: [ScheduledPayment], months: Int, now: Date) -> (now: Int, allOnTime: Int, oneMissed: Int) {
+        let current = reliability(payments, now: now)
+        let n = max(1, months)
+        func points(_ onTime: Int, _ total: Int) -> Int { total == 0 ? 0 : Int((Double(onTime) / Double(total) * 200).rounded()) }
+        return (current.points,
+                points(current.onTime + n, current.total + n),
+                points(current.onTime + n - 1, current.total + n))
+    }
+}
