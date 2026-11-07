@@ -24,6 +24,7 @@ struct RootView: View {
         .sheet(isPresented: $model.showChat) { ChatView() }
         .sheet(isPresented: $model.showAddTransaction) { AddTransactionView() }
         .fullScreenCover(isPresented: $model.showBriefing) { BriefingView() }
+        .sheet(isPresented: $model.showEighteenWelcome) { EighteenWelcomeView() }
         .sheet(item: $model.lockedFeature) { feature in
             LockedFeatureSheet(feature: feature)
                 .presentationDetents([.medium])
@@ -35,6 +36,38 @@ struct RootView: View {
             Button("OK", role: .cancel) {}
         } message: {
             Text(model.errorMessage ?? "")
+        }
+    }
+}
+
+/// Shown once on the 18th birthday, when Teen mode ends.
+struct EighteenWelcomeView: View {
+    @Environment(AppModel.self) private var model
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NovaScreen {
+            VStack(spacing: Spacing.md) {
+                if let readiness = model.readiness {
+                    ReadinessCharacter(rank: readiness.score.rank, size: 120)
+                } else {
+                    Image(systemName: "party.popper.fill").font(.system(size: 64)).foregroundStyle(NovaColor.action)
+                }
+                Text("Happy 18th, \(model.user?.firstName ?? "there")!").font(.novaTitle).foregroundStyle(NovaColor.brandText)
+                Text("Welcome to the full Nova. Your Readiness Score, streak and history come with you.")
+                    .font(.novaBody).foregroundStyle(NovaColor.body).multilineTextAlignment(.center)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.top, Spacing.xl)
+            NovaCard {
+                SectionHeader(title: "What's new for you", systemImage: "sparkles")
+                Label("Arenas can now have stakes, if you want them", systemImage: "trophy.fill").font(.novaCallout)
+                Label("Ask Nova can talk about credit products", systemImage: "bubble.left.fill").font(.novaCallout)
+                Label("Your Readiness Report is ready to share", systemImage: "doc.richtext.fill").font(.novaCallout)
+            }
+            NovaNotice(kind: .info, title: "Your credit file starts now",
+                       message: "\(ReadinessScore.disclaimer) Nova doesn't create or change a credit file. Registering to vote and paying bills on time are good first steps.")
+            Button("Let's go") { dismiss() }.buttonStyle(.novaPrimary)
         }
     }
 }

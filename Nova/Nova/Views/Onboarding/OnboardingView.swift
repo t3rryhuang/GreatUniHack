@@ -14,6 +14,7 @@ struct OnboardingView: View {
 
             switch viewModel.step {
             case .welcome: welcome
+            case .age: ageStep
             case .bank: bankStep
             case .data: dataStep
             case .connecting: connecting
@@ -35,7 +36,30 @@ struct OnboardingView: View {
             feature("sparkles", "Daily predictions", "See what you're likely to spend today, based on your habits and the Manchester weather.")
             feature("chart.line.uptrend.xyaxis", "Long-term insights", "Know how long your savings would last and where your money goes.")
             feature("trophy.fill", "Arenas", "Save with friends. Stakes stay in your NatWest savings account.")
-            Button("Get started") { viewModel.step = .bank }.buttonStyle(.novaPrimary)
+            Button("Get started") { viewModel.step = .age }.buttonStyle(.novaPrimary)
+        }
+    }
+
+    private var ageStep: some View {
+        VStack(alignment: .leading, spacing: Spacing.lg) {
+            Text("When were you born?").font(.novaTitle).foregroundStyle(NovaColor.brandText)
+            Text("If you're 16 or 17, Nova starts in Teen mode: no stakes, no credit offers, and a path to your first real account at 18.")
+                .font(.novaBody).foregroundStyle(NovaColor.body)
+            Toggle("Use my date of birth", isOn: $viewModel.shareDateOfBirth)
+                .tint(NovaColor.action)
+                .font(.novaHeadline)
+            if viewModel.shareDateOfBirth {
+                DatePicker("Date of birth", selection: $viewModel.dateOfBirth, in: ...OnboardingViewModel.latestDateOfBirth, displayedComponents: .date)
+                    .datePickerStyle(.compact)
+                    .font(.novaBody)
+            }
+            NovaNotice(kind: .info,
+                       title: viewModel.stagePreview == .teen ? "You'll start in Teen mode" : "You'll use the full app",
+                       message: viewModel.stagePreview == .teen
+                       ? "On your 18th birthday Nova moves you to the full app. Your score and history come with you."
+                       : "You can change this later in Profile.")
+            Button("Continue") { Task { await viewModel.saveAge(model: model) } }.buttonStyle(.novaPrimary)
+            Button("Back") { viewModel.step = .welcome }.buttonStyle(.novaSecondary)
         }
     }
 
@@ -83,7 +107,7 @@ struct OnboardingView: View {
                 }
             }
             Button("Continue") { viewModel.step = .data }.buttonStyle(.novaPrimary)
-            Button("Back") { viewModel.step = .welcome }.buttonStyle(.novaSecondary)
+            Button("Back") { viewModel.step = .age }.buttonStyle(.novaSecondary)
         }
     }
 

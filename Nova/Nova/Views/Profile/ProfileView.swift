@@ -140,6 +140,14 @@ struct ProfileView: View {
                     Label("Complete today's quest", systemImage: "checkmark.circle")
                 }
                 .disabled(model.readiness?.quest?.status != .pending)
+                if model.isTeen {
+                    Button {
+                        dismiss()
+                        Task { await model.simulateEighteenthBirthday() }
+                    } label: {
+                        Label("Simulate 18th birthday", systemImage: "birthday.cake")
+                    }
+                }
                 if isSwitchingStage {
                     HStack(spacing: Spacing.xs) {
                         ProgressView()

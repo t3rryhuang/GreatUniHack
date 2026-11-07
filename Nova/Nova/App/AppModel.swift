@@ -29,6 +29,8 @@ final class AppModel {
     var showChat = false
     var showBriefing = false
     var showAddTransaction = false
+    /// Shown once when a teen turns 18 and moves to the full app.
+    var showEighteenWelcome = false
     var lockedFeature: ProFeature?
 
     /// Every feature is unlocked for everyone: there is no paid tier or free trial.
@@ -91,8 +93,41 @@ final class AppModel {
             return
         }
         user = current
+        checkForEighteenthBirthday()
         await reloadData()
         phase = hasData ? .ready : .onboarding
+    }
+
+    // MARK: Turning 18
+
+    private static let lastStageKey = "nova.lastStage"
+
+    /// Teen mode ends on the 18th birthday: the next launch moves the user to the
+    /// full app (their score and history carry over) and shows a welcome.
+    private func checkForEighteenthBirthday() {
+        let defaults = UserDefaults.standard
+        let previous = defaults.string(forKey: Self.lastStageKey).flatMap(LifeStage.init(rawValue:))
+        let current = user?.stage ?? .adult
+        if previous == .teen, current == .adult, demoStageOverride == nil { showEighteenWelcome = true }
+        defaults.set(current.rawValue, forKey: Self.lastStageKey)
+    }
+
+    func setDateOfBirth(_ date: Date?) async {
+        await services.auth.updateDateOfBirth(date)
+        user = services.auth.currentUser
+        UserDefaults.standard.set(stage.rawValue, forKey: Self.lastStageKey)
+    }
+
+    /// Demo: pretend today is the 18th birthday.
+    func simulateEighteenthBirthday() async {
+        let dob = Calendar.current.date(byAdding: .year, value: -18, to: .now)
+        await services.auth.updateDateOfBirth(dob)
+        user = services.auth.currentUser
+        demoStageOverride = nil
+        UserDefaults.standard.removeObject(forKey: Self.demoStageKey)
+        UserDefaults.standard.set(LifeStage.adult.rawValue, forKey: Self.lastStageKey)
+        await reloadData()
+        showEighteenWelcome = true
     }
 
     // MARK: Session
@@ -141,9 +176,10 @@ final class AppModel {
         dataVersion += 1
     }
 
+    /// Onboarding's "Use demo data": every demo data set for the current stage.
     func loadDemoData() async throws {
-        apply(try await services.transactions.loadDemoData(stage: stage))
-        await refreshReadiness()
+        await resetDemoServices(for: stage)
+        await reloadData()
     }
 
     func importStatement(_ data: Data, type: ImportFileType) async throws {
@@ -277,6 +313,10 @@ final class AppModel {
         } else {
             UserDefaults.standard.removeObject(forKey: Self.demoStageKey)
         }
+        await resetDemoServices(for: newStage)
+    }
+
+    private func resetDemoServices(for newStage: LifeStage) async {
         savingsAccount = await services.savings.resetDemo(stage: newStage)
         _ = try? await services.transactions.loadDemoData(stage: newStage)
         await services.readiness.resetDemo(stage: newStage)
