@@ -21,12 +21,13 @@ from fastapi.responses import Response
 from pydantic import BaseModel
 
 import llm
+from speech_text import speakable
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/nova", tags=["nova"])
 
 ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY")
-ELEVENLABS_VOICE_ID = os.getenv("ELEVENLABS_VOICE_ID", "21m00Tcm4TlvDq8ikWAM")  # "Rachel", as in the original app
+ELEVENLABS_VOICE_ID = os.getenv("ELEVENLABS_VOICE_ID", "RU8huomG1ebFQW6nNko3")  # "Maria – Manchester Literary Narrator"
 ELEVENLABS_MODEL = os.getenv("ELEVENLABS_MODEL", "eleven_flash_v2_5")
 ELEVENLABS_STT_MODEL = os.getenv("ELEVENLABS_STT_MODEL", "scribe_v2")
 
@@ -179,7 +180,8 @@ async def chat(req: ChatRequest):
 async def tts(req: TTSRequest):
     if not ELEVENLABS_API_KEY:
         raise HTTPException(status_code=503, detail="ELEVENLABS_API_KEY not set")
-    text = req.text.strip()[:2500]
+    # Money is rewritten as words ("£3.60" -> "three pounds sixty") so the voice reads it correctly.
+    text = speakable(req.text.strip())[:2500]
     if not text:
         raise HTTPException(status_code=400, detail="Empty text")
     async with httpx.AsyncClient(timeout=60) as client:
