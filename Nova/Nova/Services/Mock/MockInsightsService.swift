@@ -251,9 +251,22 @@ enum WhatIfEngine {
         }
         func make(_ outcome: String, _ amount: Double, _ period: String, _ positive: Bool,
                   _ before: (String, Double), _ after: (String, Double), _ confidence: Int, _ details: String) -> WhatIfResult {
-            WhatIfResult(question: question, outcome: outcome, amount: amount, period: period, isPositive: positive,
+            let quitting = q.contains("quit") || q.contains("lose my job") || q.contains("no income")
+            let impact: Double = quitting ? -summary.monthlyIncome
+                : period == "month" ? amount * (positive ? 1 : -1)
+                : period == "year" && !(q.contains("save") || q.contains("saving")) ? amount / 12 * (positive ? 1 : -1)
+                : 0
+            let icon = quitting ? "briefcase.fill"
+                : q.contains("coffee") || q.contains("latte") ? "cup.and.saucer.fill"
+                : q.contains("eat") || q.contains("food") || q.contains("restaurant") ? "fork.knife"
+                : q.contains("rent") || q.contains("move") ? "house.fill"
+                : q.contains("cycl") || q.contains("bike") ? "bicycle"
+                : q.contains("subscription") ? "tv.fill"
+                : "sterlingsign.circle.fill"
+            return WhatIfResult(question: question, outcome: outcome, amount: amount, period: period, isPositive: positive,
                          beforeLabel: before.0, beforeValue: before.1, afterLabel: after.0, afterValue: after.1,
-                         confidence: confidence, details: details)
+                         confidence: confidence, details: details,
+                         infographic: .local(theme: "offline", icon: icon, monthlyImpact: impact, summary: summary))
         }
 
         if q.contains("quit") || q.contains("lose my job") || q.contains("no income") {

@@ -1,9 +1,7 @@
 """Arena API: create, join, sync and settle savings challenges between friends.
 
-Storage is Upstash Redis via its REST API (env vars injected by the Vercel
-Upstash integration: KV_REST_API_URL / KV_REST_API_TOKEN, or
-UPSTASH_REDIS_REST_URL / UPSTASH_REDIS_REST_TOKEN). Without them an in-memory
-store is used, which is fine for local dev but does not persist on Vercel.
+Storage is Upstash Redis (see store.py). Without it an in-memory store is
+used, which is fine for local dev but does not persist on Vercel.
 
 Identity: the client sends `X-User-Id` (the account email) and `X-User-Name`.
 Stakes and payouts move money in the user's on-device savings account; the
@@ -13,13 +11,11 @@ Winner rules are ported from `ArenaRules` in the iOS app.
 from __future__ import annotations
 
 import json
-import os
 import random
 import uuid
 from datetime import datetime, timezone
 from typing import Literal
 
-import httpx
 from fastapi import APIRouter, Header, HTTPException
 from pydantic import BaseModel, Field
 
@@ -27,62 +23,14 @@ router = APIRouter(prefix="/arenas", tags=["arena"])
 
 Mode = Literal["budget_guardian", "vice_streak", "savings_sprint"]
 
-# ---------------------------------------------------------------------------
-# Storage
-# ---------------------------------------------------------------------------
+import store  # noqa: E402
 
-_REDIS_URL = os.getenv("KV_REST_API_URL") or os.getenv("UPSTASH_REDIS_REST_URL")
-_REDIS_TOKEN = os.getenv("KV_REST_API_TOKEN") or os.getenv("UPSTASH_REDIS_REST_TOKEN")
-_memory: dict[str, object] = {}
-
-
-def storage_backend() -> str:
-    return "upstash" if _REDIS_URL and _REDIS_TOKEN else "memory"
-
-
-async def _redis(*cmd: str):
-    async with httpx.AsyncClient(timeout=10) as client:
-        r = await client.post(_REDIS_URL, headers={"Authorization": f"Bearer {_REDIS_TOKEN}"}, json=list(cmd))
-        r.raise_for_status()
-        body = r.json()
-        if "error" in body:
-            raise HTTPException(status_code=502, detail=f"Storage error: {body['error']}")
-        return body.get("result")
-
-
-async def kv_get(key: str) -> str | None:
-    if storage_backend() == "memory":
-        return _memory.get(key)  # type: ignore[return-value]
-    return await _redis("GET", key)
-
-
-async def kv_set(key: str, value: str) -> None:
-    if storage_backend() == "memory":
-        _memory[key] = value
-        return
-    await _redis("SET", key, value)
-
-
-async def kv_setnx(key: str, value: str) -> bool:
-    if storage_backend() == "memory":
-        if key in _memory:
-            return False
-        _memory[key] = value
-        return True
-    return bool(await _redis("SET", key, value, "NX"))
-
-
-async def kv_sadd(key: str, member: str) -> None:
-    if storage_backend() == "memory":
-        _memory.setdefault(key, set()).add(member)  # type: ignore[union-attr]
-        return
-    await _redis("SADD", key, member)
-
-
-async def kv_smembers(key: str) -> list[str]:
-    if storage_backend() == "memory":
-        return list(_memory.get(key, set()))  # type: ignore[arg-type]
-    return await _redis("SMEMBERS", key) or []
+kv_get = store.get
+kv_set = store.put
+kv_setnx = store.setnx
+kv_sadd = store.sadd
+kv_smembers = store.smembers
+storage_backend = store.backend
 
 
 # ---------------------------------------------------------------------------

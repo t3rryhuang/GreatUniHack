@@ -85,16 +85,31 @@ final class RemoteInsightsService: MockInsightsService {
 
     override func whatIf(_ question: String, summary: FinancialSummary, transactions: [Transaction]) async throws -> WhatIfResult {
         struct Body: Encodable { let question: String; let summary: WireSummary }
+        struct WireBreakdown: Decodable { let label: String; let amount: Double }
+        struct WireProjection: Decodable { let baseline: [Double]; let scenario: [Double] }
+        struct WireInfographic: Decodable {
+            let theme: String; let icon: String; let equivalent: String; let monthlyImpact: Double; let oneOffCost: Double
+            let breakdown: [WireBreakdown]; let projection: WireProjection; let illustrationPath: String?
+        }
         struct Wire: Decodable {
             let outcome: String; let amount: Double; let period: String; let isPositive: Bool
             let beforeLabel: String; let beforeValue: Double; let afterLabel: String; let afterValue: Double
-            let confidence: Int; let details: String
+            let confidence: Int; let details: String; let infographic: WireInfographic?
         }
         do {
             let r: Wire = try await client.send("POST", "nova/what-if", body: Body(question: question, summary: WireSummary(summary)))
             return WhatIfResult(question: question, outcome: r.outcome, amount: r.amount, period: r.period, isPositive: r.isPositive,
                                 beforeLabel: r.beforeLabel, beforeValue: r.beforeValue, afterLabel: r.afterLabel,
-                                afterValue: r.afterValue, confidence: r.confidence, details: r.details)
+                                afterValue: r.afterValue, confidence: r.confidence, details: r.details,
+                                infographic: r.infographic.map { info in
+                                    WhatIfInfographic(
+                                        theme: info.theme, icon: info.icon, equivalent: info.equivalent,
+                                        monthlyImpact: info.monthlyImpact, oneOffCost: info.oneOffCost,
+                                        breakdown: info.breakdown.map { .init(label: $0.label, amount: $0.amount) },
+                                        baseline: info.projection.baseline, scenario: info.projection.scenario,
+                                        illustrationURL: info.illustrationPath.flatMap { URL(string: $0, relativeTo: client.baseURL)?.absoluteURL }
+                                    )
+                                })
         } catch {
             return try await super.whatIf(question, summary: summary, transactions: transactions)
         }

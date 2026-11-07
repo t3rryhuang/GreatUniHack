@@ -55,18 +55,21 @@ struct LaunchView: View {
 }
 
 struct MainTabView: View {
+    // Launch with `-NovaTab 4` to open on a given tab (handy for demos and screenshots).
+    @State private var tab = UserDefaults.standard.integer(forKey: "NovaTab")
+
     var body: some View {
-        TabView {
+        TabView(selection: $tab) {
             HomeView()
-                .tabItem { Label("Home", systemImage: "house") }
+                .tabItem { Label("Home", systemImage: "house") }.tag(0)
             InsightsView()
-                .tabItem { Label("Insights", systemImage: "chart.bar") }
+                .tabItem { Label("Insights", systemImage: "chart.bar") }.tag(1)
             HistoryView()
-                .tabItem { Label("History", systemImage: "clock") }
+                .tabItem { Label("History", systemImage: "clock") }.tag(2)
             ArenaListView()
-                .tabItem { Label("Arena", systemImage: "trophy") }
+                .tabItem { Label("Arena", systemImage: "trophy") }.tag(3)
             SimulatorView()
-                .tabItem { Label("Simulator", systemImage: "slider.horizontal.3") }
+                .tabItem { Label("Simulator", systemImage: "slider.horizontal.3") }.tag(4)
         }
         // Profile is reached from the avatar button on every tab (see `profileToolbar`),
         // keeping the tab bar at Apple's recommended maximum of five tabs.
