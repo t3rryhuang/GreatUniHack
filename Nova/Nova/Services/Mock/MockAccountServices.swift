@@ -1,33 +1,46 @@
 import Foundation
 
 /// Mock sign-in. Any email with a password of 6 or more characters works.
+/// Each account's profile (name, bank, date of birth) is remembered by email on
+/// this device, so signing back in restores it, including Teen mode.
 final class MockAuthService: AuthServicing {
     private let storeName = "user.json"
+    private let accountsStoreName = "accounts.json"
     private(set) var currentUser: UserProfile?
+    private var accounts: [String: UserProfile]
 
     init() {
         currentUser = LocalStore.load(UserProfile.self, from: storeName)
+        accounts = LocalStore.load([String: UserProfile].self, from: accountsStoreName) ?? [:]
+        // Profiles saved before accounts were remembered.
+        if let currentUser, accounts[currentUser.email] == nil { accounts[currentUser.email] = currentUser }
     }
 
     func signIn(email: String, password: String) async throws -> UserProfile {
         await simulateLatency(700)
         guard email.contains("@"), password.count >= 6 else { throw ServiceError.invalidCredentials }
-        let local = email.split(separator: "@").first.map(String.init) ?? "Alex"
-        let name = local.split(whereSeparator: { $0 == "." || $0 == "_" })
-            .map { $0.capitalized }
-            .joined(separator: " ")
-        let user = UserProfile(name: name.isEmpty ? "Alex" : name, email: email.lowercased())
-        currentUser = user
-        LocalStore.save(user, to: storeName)
+        let key = email.lowercased().trimmingCharacters(in: .whitespaces)
+        let user: UserProfile
+        if let saved = accounts[key] {
+            user = saved
+        } else {
+            let local = key.split(separator: "@").first.map(String.init) ?? "Alex"
+            let name = local.split(whereSeparator: { $0 == "." || $0 == "_" })
+                .map { $0.capitalized }
+                .joined(separator: " ")
+            user = UserProfile(name: name.isEmpty ? "Alex" : name, email: key)
+        }
+        save(user)
         return user
     }
 
     func signUp(name: String, email: String, password: String) async throws -> UserProfile {
         await simulateLatency(800)
         guard email.contains("@"), password.count >= 6 else { throw ServiceError.invalidCredentials }
-        let user = UserProfile(name: name.trimmingCharacters(in: .whitespaces), email: email.lowercased())
-        currentUser = user
-        LocalStore.save(user, to: storeName)
+        let key = email.lowercased().trimmingCharacters(in: .whitespaces)
+        guard accounts[key] == nil else { throw ServiceError.emailInUse }
+        let user = UserProfile(name: name.trimmingCharacters(in: .whitespaces), email: key)
+        save(user)
         return user
     }
 
@@ -38,12 +51,19 @@ final class MockAuthService: AuthServicing {
 
     func updateBank(_ bank: Bank) async {
         currentUser?.bank = bank
-        if let currentUser { LocalStore.save(currentUser, to: storeName) }
+        if let currentUser { save(currentUser) }
     }
 
     func updateDateOfBirth(_ date: Date?) async {
         currentUser?.dateOfBirth = date
-        if let currentUser { LocalStore.save(currentUser, to: storeName) }
+        if let currentUser { save(currentUser) }
+    }
+
+    private func save(_ user: UserProfile) {
+        currentUser = user
+        accounts[user.email] = user
+        LocalStore.save(user, to: storeName)
+        LocalStore.save(accounts, to: accountsStoreName)
     }
 }
 

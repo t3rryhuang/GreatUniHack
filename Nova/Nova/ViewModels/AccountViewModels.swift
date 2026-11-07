@@ -28,7 +28,7 @@ final class LoginViewModel {
                 ? try await model.services.auth.signIn(email: email, password: password)
                 : try await model.services.auth.signUp(name: name, email: email, password: password)
             errorMessage = nil
-            await model.didSignIn(user)
+            await model.didSignIn(user, isNewAccount: mode == .signUp)
         } catch {
             errorMessage = error.localizedDescription
         }

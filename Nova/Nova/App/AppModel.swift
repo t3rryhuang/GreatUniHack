@@ -106,6 +106,9 @@ final class AppModel {
             return
         }
         user = current
+        // Whoever is signed in owns the data on this phone (covers installs from before
+        // this was tracked, and the demo launch arguments).
+        UserDefaults.standard.set(current.email, forKey: Self.dataOwnerKey)
         checkForEighteenthBirthday()
         await reloadData()
         phase = hasData ? .ready : .onboarding
@@ -145,10 +148,23 @@ final class AppModel {
 
     // MARK: Session
 
-    func didSignIn(_ profile: UserProfile) async {
+    private static let dataOwnerKey = "nova.dataOwner"
+
+    /// After sign-in or sign-up. A new account, or a different person signing in on
+    /// this phone, starts with no transactions and goes through setup (including the
+    /// age question), so nobody sees someone else's data.
+    func didSignIn(_ profile: UserProfile, isNewAccount: Bool = false) async {
         user = profile
+        let defaults = UserDefaults.standard
+        let owner = defaults.string(forKey: Self.dataOwnerKey)
+        if isNewAccount || (owner != nil && owner != profile.email) {
+            try? await services.transactions.clearAll()
+        }
+        defaults.set(profile.email, forKey: Self.dataOwnerKey)
+        // Remember this account's stage so switching accounts never looks like an 18th birthday.
+        defaults.set(profile.stage.rawValue, forKey: Self.lastStageKey)
         await reloadData()
-        phase = hasData ? .ready : .onboarding
+        phase = hasData && !isNewAccount ? .ready : .onboarding
     }
 
     func finishOnboarding(bank: Bank) async {
