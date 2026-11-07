@@ -121,21 +121,23 @@ struct ProfileView: View {
             }
 
             Section {
-                Picker("Mode", selection: Binding(
-                    get: { model.stage },
-                    set: { newStage in
+                Picker("Profile", selection: Binding(
+                    get: { model.stage == .adult ? .adult : (model.demoProfile == .teenA ? .teenA : .teenB) },
+                    set: { profile in
                         Task {
                             isSwitchingStage = true
-                            await model.switchDemoStage(to: newStage)
+                            await model.switchDemoProfile(to: profile)
                             isSwitchingStage = false
                         }
                     }
                 )) {
-                    ForEach(LifeStage.allCases) { Text($0.title).tag($0) }
+                    ForEach(DemoProfile.selectable) { Text($0.title).tag($0) }
                 }
                 .pickerStyle(.segmented)
                 .disabled(isSwitchingStage)
-                .accessibilityLabel("Demo mode")
+                .accessibilityLabel("Demo profile")
+                Text(model.stage == .adult ? DemoProfile.adult.subtitle : (model.demoProfile == .teenA ? DemoProfile.teenA : DemoProfile.teenB).subtitle)
+                    .font(.novaCaption).foregroundStyle(NovaColor.body)
                 Button {
                     Task { await model.completeQuestForDemo() }
                 } label: {
@@ -150,6 +152,9 @@ struct ProfileView: View {
                         Label("Simulate 18th birthday", systemImage: "birthday.cake")
                     }
                 }
+                #if DEBUG
+                NavigationLink { FairnessCheckView() } label: { Label("Fairness check", systemImage: "scalemass") }
+                #endif
                 if isSwitchingStage {
                     HStack(spacing: Spacing.xs) {
                         ProgressView()
@@ -159,7 +164,7 @@ struct ProfileView: View {
             } header: {
                 Text("Demo")
             } footer: {
-                Text("Teen mode is for 16 and 17-year-olds. Switching loads matching demo data. Quests are normally checked at the end of the day.")
+                Text("Teen A and Teen B have the same habits but very different money. Switching loads matching demo data. Quests are normally checked at the end of the day.")
             }
 
             Section {

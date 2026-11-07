@@ -95,25 +95,8 @@ final class LocalReadinessService: ReadinessServicing {
         return state
     }
 
-    func resetDemo(stage: LifeStage) async {
-        var fresh = ReadinessProgress()
-        switch stage {
-        case .teen:
-            // The shield saved a 21-day streak two days ago; completing today's quest makes it 23.
-            fresh.streak = 22
-            fresh.longestStreak = 22
-            fresh.questsCompleted = 22
-            fresh.whatIfs = 1
-            fresh.moneyQuestLevels = 2
-            let shieldDay = Calendar.current.date(byAdding: .day, value: -2, to: Calendar.current.startOfDay(for: .now)) ?? .now
-            fresh.shieldMonths = [ReadinessRules.monthKey(shieldDay)]
-            fresh.lastShieldEvent = ShieldEvent(date: shieldDay, savedStreak: 21)
-        case .adult:
-            fresh.streak = 9
-            fresh.longestStreak = 31
-            fresh.questsCompleted = 40
-            fresh.whatIfs = 2
-        }
+    func resetDemo(profile: DemoProfile) async {
+        var fresh = MockDataFactory.readinessSeed(profile)
         fresh.seedHistory = true
         state = fresh
         persist()

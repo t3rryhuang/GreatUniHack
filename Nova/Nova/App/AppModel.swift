@@ -48,6 +48,11 @@ final class AppModel {
     /// Demo override from Profile > Demo, so the stage can change without editing the birth date.
     private(set) var demoStageOverride: LifeStage? = UserDefaults.standard.string(forKey: AppModel.demoStageKey).flatMap(LifeStage.init(rawValue:))
 
+    private static let demoProfileKey = "nova.demoProfile"
+
+    /// The demo data set in use (Profile > Demo).
+    private(set) var demoProfile: DemoProfile = UserDefaults.standard.string(forKey: AppModel.demoProfileKey).flatMap(DemoProfile.init(rawValue:)) ?? .adult
+
     /// Teen (16-17) or adult. The demo override wins over the date of birth.
     var stage: LifeStage { demoStageOverride ?? user?.stage ?? .adult }
     var isTeen: Bool { stage == .teen }
@@ -74,19 +79,22 @@ final class AppModel {
         #if DEBUG
         let arguments = ProcessInfo.processInfo.arguments
         // Launch with `-NovaTeenDemo` to start as Jamie, 17, in Teen mode.
-        if arguments.contains("-NovaTeenDemo"), services.auth.currentUser?.email != MockDataFactory.teenEmail {
-            if (try? await services.auth.signIn(email: MockDataFactory.teenEmail, password: "demo1234")) != nil {
+        // `-NovaTeenADemo` starts as Teen A (pocket money only).
+        let teenProfile: DemoProfile? = arguments.contains("-NovaTeenADemo") ? .teenA : arguments.contains("-NovaTeenDemo") ? .teenB : nil
+        if let teenProfile, services.auth.currentUser?.email != MockDataFactory.teenSetup(teenProfile).email || demoProfile != teenProfile {
+            let setup = MockDataFactory.teenSetup(teenProfile)
+            if (try? await services.auth.signIn(email: setup.email, password: "demo1234")) != nil {
                 await services.auth.updateBank(.natwest)
                 await services.auth.updateDateOfBirth(MockDataFactory.teenDateOfBirth())
                 user = services.auth.currentUser
-                await resetDemo(for: .teen)
+                await resetDemo(to: teenProfile)
             }
         // Launch with `-NovaDemo` to skip sign-in and onboarding (handy for demos and screenshots).
         } else if arguments.contains("-NovaDemo"), services.auth.currentUser == nil {
             if (try? await services.auth.signIn(email: "alex.taylor@example.com", password: "demo1234")) != nil {
                 await services.auth.updateBank(.natwest)
                 user = services.auth.currentUser
-                await resetDemo(for: .adult)
+                await resetDemo(to: .adult)
             }
         }
         #endif
@@ -181,7 +189,7 @@ final class AppModel {
 
     /// Onboarding's "Use demo data": every demo data set for the current stage.
     func loadDemoData() async throws {
-        await resetDemoServices(for: stage)
+        await resetDemoServices(for: DemoProfile.default(for: stage))
         await reloadData()
     }
 
@@ -229,30 +237,16 @@ final class AppModel {
             transactions: transactions,
             summary: summary,
             savingsBalance: savingsAccount?.balance ?? 0,
-            familyPayments: isTeen ? family.scheduledPayments() + promisePayments() : [],
+            familyPayments: isTeen ? family.scheduledPayments() + ReadinessRules.promisePayments(piggy, now: .now) : [],
             accountStart: min(user?.memberSince ?? .now, earliest),
             stage: stage,
-            savingDeposits: savingDeposits(),
+            savingDeposits: ReadinessRules.savingDeposits(transactions, piggy: piggy),
             hardshipScale: hardshipScale
         )
         readiness = await services.readiness.evaluate(input)
         readinessProgress = await services.readiness.progress()
     }
 
-    /// Any deposit into savings, any amount: Piggy Bank deposits and transfers to the saver.
-    private func savingDeposits() -> [Date] {
-        let transfers = transactions.filter {
-            $0.isExpense && $0.category == .transfer && ($0.description.localizedCaseInsensitiveContains("saver") || $0.description.localizedCaseInsensitiveContains("piggy"))
-        }.map(\.date)
-        return transfers + (piggy?.deposits.map(\.date) ?? [])
-    }
-
-    /// Weekly "promise to myself" transfers, scored like bills.
-    private func promisePayments(now: Date = .now) -> [ScheduledPayment] {
-        (piggy?.promise?.cycles(now: now) ?? []).map {
-            ScheduledPayment(name: "Promise to myself", amount: $0.amount, due: $0.due, paid: $0.paid)
-        }
-    }
 
     /// Counts a what-if, lesson or sandbox run towards Wisdom.
     func recordWisdom(_ event: WisdomEvent) async {
@@ -393,31 +387,34 @@ final class AppModel {
 
     // MARK: Demo
 
-    /// Profile > Demo switch: changes the stage and loads matching demo data.
-    func switchDemoStage(to newStage: LifeStage) async {
-        guard newStage != stage else { return }
-        await resetDemo(for: newStage)
+    /// Profile > Demo switch: Adult, Teen A or Teen B, with matching demo data.
+    func switchDemoProfile(to profile: DemoProfile) async {
+        guard profile != demoProfile || profile.stage != stage else { return }
+        await resetDemo(to: profile)
         await reloadData()
     }
 
-    /// Sets the stage override and reloads every demo data set for that stage.
-    private func resetDemo(for newStage: LifeStage) async {
+    /// Sets the stage override and reloads every demo data set for the profile.
+    private func resetDemo(to profile: DemoProfile) async {
+        let newStage = profile.stage
         demoStageOverride = newStage == user?.stage ? nil : newStage
         if let demoStageOverride {
             UserDefaults.standard.set(demoStageOverride.rawValue, forKey: Self.demoStageKey)
         } else {
             UserDefaults.standard.removeObject(forKey: Self.demoStageKey)
         }
-        await resetDemoServices(for: newStage)
+        await resetDemoServices(for: profile)
     }
 
-    private func resetDemoServices(for newStage: LifeStage) async {
-        savingsAccount = await services.savings.resetDemo(stage: newStage)
-        _ = try? await services.transactions.loadDemoData(stage: newStage)
-        await services.readiness.resetDemo(stage: newStage)
-        await services.arenas.resetDemo(stage: newStage)
-        await services.family.resetDemo(stage: newStage)
-        await services.game.resetDemo(stage: newStage)
+    private func resetDemoServices(for profile: DemoProfile) async {
+        demoProfile = profile
+        UserDefaults.standard.set(profile.rawValue, forKey: Self.demoProfileKey)
+        savingsAccount = await services.savings.resetDemo(profile: profile)
+        _ = try? await services.transactions.loadDemoData(profile: profile)
+        await services.readiness.resetDemo(profile: profile)
+        await services.arenas.resetDemo(profile: profile)
+        await services.family.resetDemo(profile: profile)
+        await services.game.resetDemo(profile: profile)
     }
 
     // MARK: Plan

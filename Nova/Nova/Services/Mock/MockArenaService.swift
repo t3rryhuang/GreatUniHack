@@ -141,9 +141,9 @@ final class MockArenaService: ArenaServicing {
         return ArenaSettlement(arenaID: arena.id, winner: winner, standings: standings, payout: arena.prizePot, reference: reference, settledAt: .now)
     }
 
-    func resetDemo(stage: LifeStage) async {
+    func resetDemo(profile: DemoProfile) async {
         guard let user = auth.currentUser else { return }
-        arenas = MockDataFactory.demoArenas(currentUser: user, stage: stage)
+        arenas = MockDataFactory.demoArenas(currentUser: user, stage: profile.stage)
         persist()
     }
 

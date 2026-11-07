@@ -318,7 +318,9 @@ enum ReadinessRules {
         let weekly = weeklyTotals(transactions, now: now)
         guard weekly.contains(where: { $0 > 0 }) else { return (0, 0, limit ?? 0, weekly) }
         let basis = recentWeeksOnly ? Array(weekly.suffix(4)) : weekly
-        let effective = limit ?? (basis.reduce(0, +) / Double(basis.count)).rounded()
+        // Rounded to the penny, not the pound: whole-pound rounding moved the line much
+        // more for someone spending £9 a week than for someone spending £70 (unfair to small budgets).
+        let effective = limit ?? (basis.reduce(0, +) / Double(basis.count) * 100).rounded() / 100
         let under = weekly.filter { $0 <= effective }.count
         return (Int((Double(under) / Double(weekly.count) * 200).rounded()), under, effective, weekly)
     }
@@ -639,5 +641,23 @@ extension ReadinessRules {
         let before = income(monthBefore, lastMonth)
         guard before > 0, recent < before * 0.7 else { return 1 }
         return max(0.3, recent / before)
+    }
+}
+
+extension ReadinessRules {
+    /// Any deposit into savings, any amount: transfers to the saver or Piggy Bank, plus Piggy Bank deposits.
+    static func savingDeposits(_ transactions: [Transaction], piggy: PiggyBank?) -> [Date] {
+        let transfers = transactions.filter {
+            $0.isExpense && $0.category == .transfer
+                && ($0.description.localizedCaseInsensitiveContains("saver") || $0.description.localizedCaseInsensitiveContains("piggy"))
+        }.map(\.date)
+        return transfers + (piggy?.deposits.map(\.date) ?? [])
+    }
+
+    /// Weekly "promise to myself" transfers, scored like bills.
+    static func promisePayments(_ piggy: PiggyBank?, now: Date) -> [ScheduledPayment] {
+        (piggy?.promise?.cycles(now: now) ?? []).map {
+            ScheduledPayment(name: "Promise to myself", amount: $0.amount, due: $0.due, paid: $0.paid)
+        }
     }
 }

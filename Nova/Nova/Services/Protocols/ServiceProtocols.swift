@@ -48,8 +48,8 @@ protocol AuthServicing: AnyObject, Sendable {
 /// (`/parse-pdf`) and the local transaction store.
 protocol TransactionServicing: AnyObject, Sendable {
     func fetchTransactions() async throws -> [Transaction]
-    /// Replaces the stored transactions with demo data for a life stage (manual entries are kept).
-    func loadDemoData(stage: LifeStage) async throws -> [Transaction]
+    /// Replaces the stored transactions with demo data for a profile (manual entries are kept).
+    func loadDemoData(profile: DemoProfile) async throws -> [Transaction]
     func importStatement(_ data: Data, type: ImportFileType) async throws -> [Transaction]
     func add(_ transaction: Transaction) async throws
     func delete(id: UUID) async throws
@@ -57,7 +57,7 @@ protocol TransactionServicing: AnyObject, Sendable {
 }
 
 extension TransactionServicing {
-    func loadDemoData() async throws -> [Transaction] { try await loadDemoData(stage: .adult) }
+    func loadDemoData() async throws -> [Transaction] { try await loadDemoData(profile: .adult) }
 }
 
 /// Predictions and insights. Maps to the original `/week-ahead`, `/income-runway`,
@@ -103,12 +103,12 @@ protocol ArenaServicing: AnyObject, Sendable {
     func preview(code: String) async throws -> Arena
     func sync(arenaID: UUID, transactions: [Transaction]) async throws -> Arena
     func settle(arenaID: UUID) async throws -> ArenaSettlement
-    /// Demo only: arenas that fit the life stage. Shared backend arenas are left alone.
-    func resetDemo(stage: LifeStage) async
+    /// Demo only: arenas that fit the profile. Shared backend arenas are left alone.
+    func resetDemo(profile: DemoProfile) async
 }
 
 extension ArenaServicing {
-    func resetDemo(stage: LifeStage) async {}
+    func resetDemo(profile: DemoProfile) async {}
 }
 
 /// The NatWest savings account that holds arena stakes and receives prize pots.
@@ -120,7 +120,7 @@ protocol SavingsServicing: AnyObject, Sendable {
     /// Saves the Piggy Bank goal, deposits and promise (money moves with `topUp`).
     func updatePiggy(_ piggy: PiggyBank?) async -> SavingsAccount
     /// Demo only: resets the account to a balance that fits the life stage.
-    func resetDemo(stage: LifeStage) async -> SavingsAccount
+    func resetDemo(profile: DemoProfile) async -> SavingsAccount
 }
 
 /// Free / Pro plan. Replaces Stripe.
@@ -146,7 +146,7 @@ protocol ReadinessServicing: AnyObject, Sendable {
     func setVotingChecked(_ done: Bool) async -> ReadinessProgress
     func markReportPreviewed() async -> ReadinessProgress
     /// Demo only: starting progress that fits the life stage.
-    func resetDemo(stage: LifeStage) async
+    func resetDemo(profile: DemoProfile) async
 }
 
 /// Family loans and shared bills (Teen mode). On-device in both containers.
@@ -158,14 +158,14 @@ protocol FamilyServicing: AnyObject, Sendable {
     func payInstalment(loanID: UUID) async throws -> FamilyPayment
     func addBill(name: String, amount: Double, dayOfMonth: Int, partnerName: String, relationship: String) async throws -> SharedBill
     func payBill(billID: UUID) async throws -> FamilyPayment
-    func resetDemo(stage: LifeStage) async
+    func resetDemo(profile: DemoProfile) async
 }
 
 /// Money Quest progress (points, badges, completed levels). On-device in both containers.
 protocol GameServicing: AnyObject, Sendable {
     func progress() async -> GameProgress
     func completeLevel(_ levelID: String, in chapter: QuestChapter, correctAnswers: Int) async -> LevelReward
-    func resetDemo(stage: LifeStage) async
+    func resetDemo(profile: DemoProfile) async
 }
 
 /// Friend and school leagues (Teen mode). On-device demo data in both containers.

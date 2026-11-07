@@ -18,9 +18,9 @@ final class LocalGameService: GameServicing {
         return reward
     }
 
-    func resetDemo(stage: LifeStage) async {
+    func resetDemo(profile: DemoProfile) async {
         var fresh = GameProgress()
-        if stage == .teen {
+        if profile == .teenA || profile == .teenB {
             // Two chapter 1 levels done on earlier days, so today's points start at 0.
             fresh.completedLevels = ["c1l1", "c1l2"]
             fresh.bestCorrect = ["c1l1": 2, "c1l2": 1]

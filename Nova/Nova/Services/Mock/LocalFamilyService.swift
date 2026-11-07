@@ -75,8 +75,8 @@ final class LocalFamilyService: FamilyServicing {
         return next
     }
 
-    func resetDemo(stage: LifeStage) async {
-        data = stage == .teen ? MockDataFactory.teenFamily() : FamilyState()
+    func resetDemo(profile: DemoProfile) async {
+        data = profile.stage == .teen ? MockDataFactory.teenFamily(profile) : FamilyState()
         persist()
     }
 

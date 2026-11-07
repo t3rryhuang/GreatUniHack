@@ -53,11 +53,11 @@ final class MockSavingsService: SavingsServicing {
     private var state: SavingsAccount
 
     init() {
-        state = LocalStore.load(SavingsAccount.self, from: storeName) ?? Self.demoAccount(stage: .adult)
+        state = LocalStore.load(SavingsAccount.self, from: storeName) ?? Self.demoAccount(profile: .adult)
     }
 
-    static func demoAccount(stage: LifeStage) -> SavingsAccount {
-        switch stage {
+    static func demoAccount(profile: DemoProfile) -> SavingsAccount {
+        switch profile.stage {
         case .adult:
             SavingsAccount(
                 name: "Flexible Saver",
@@ -74,12 +74,12 @@ final class MockSavingsService: SavingsServicing {
                 name: "Flexible Saver",
                 sortCode: "60-00-01",
                 accountNumber: "51830264",
-                balance: 265,
+                balance: MockDataFactory.teenSetup(profile).savingsBalance,
                 interestRate: 1.25,
                 activity: [
                     SavingsActivity(date: .now.addingTimeInterval(-86_400 * 9), title: "Transfer from current account", amount: 40, reference: "PAYDAY SAVE")
                 ],
-                piggy: MockDataFactory.teenPiggy()
+                piggy: MockDataFactory.teenPiggy(profile)
             )
         }
     }
@@ -90,8 +90,8 @@ final class MockSavingsService: SavingsServicing {
         return state
     }
 
-    func resetDemo(stage: LifeStage) async -> SavingsAccount {
-        state = Self.demoAccount(stage: stage)
+    func resetDemo(profile: DemoProfile) async -> SavingsAccount {
+        state = Self.demoAccount(profile: profile)
         persist()
         return state
     }
