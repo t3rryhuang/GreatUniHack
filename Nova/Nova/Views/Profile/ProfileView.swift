@@ -35,6 +35,25 @@ struct ProfileView: View {
                 }
             }
 
+            if let readiness = model.readiness {
+                Section {
+                    NavigationLink { ReadinessView() } label: {
+                        HStack(spacing: Spacing.md) {
+                            ReadinessCharacter(rank: readiness.score.rank, size: 52)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Readiness Score").font(.novaCaption).foregroundStyle(NovaColor.body)
+                                Text("\(readiness.score.total) · \(readiness.score.rank.title)")
+                                    .font(.novaSection).foregroundStyle(NovaColor.heading).monospacedDigit()
+                            }
+                        }
+                        .accessibilityElement(children: .ignore)
+                        .accessibilityLabel("Readiness Score \(readiness.score.total), \(readiness.score.rank.title)")
+                    }
+                } footer: {
+                    Text(ReadinessScore.disclaimer)
+                }
+            }
+
             if !model.isPro {
                 Section {
                     Button {

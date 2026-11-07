@@ -15,6 +15,12 @@ struct HomeView: View {
                 } else {
                     if let briefing = viewModel.briefing {
                         WeatherHero(briefing: briefing)
+                    }
+                    if let readiness = model.readiness {
+                        NavigationLink { ReadinessView() } label: { ReadinessSummaryCard(snapshot: readiness) }
+                            .buttonStyle(.plain)
+                    }
+                    if let briefing = viewModel.briefing {
                         BriefingCard(briefing: briefing)
                     }
                     TodayPredictions(prediction: viewModel.weekAhead.first)

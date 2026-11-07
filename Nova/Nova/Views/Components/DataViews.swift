@@ -6,6 +6,7 @@ struct RingView<Center: View>: View {
     var lineWidth: CGFloat = 14
     var tint: Color = NovaColor.action
     @ViewBuilder var center: Center
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         ZStack {
@@ -14,7 +15,7 @@ struct RingView<Center: View>: View {
                 .trim(from: 0, to: min(1, max(0.001, progress)))
                 .stroke(tint, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
                 .rotationEffect(.degrees(-90))
-                .animation(.easeOut(duration: 0.6), value: progress)
+                .animation(reduceMotion ? nil : .easeOut(duration: 0.6), value: progress)
             center
         }
     }

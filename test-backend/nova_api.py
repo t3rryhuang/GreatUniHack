@@ -405,7 +405,7 @@ def _condition(code: int, temp: float, wind: float) -> str:
 IMPACT = {
     "rain": "Rainy days usually mean more Uber trips and food delivery.",
     "drizzle": "Drizzly days usually mean more Uber trips and food delivery.",
-    "sunny": "Sunny days usually mean more pub and park spending.",
+    "sunny": "Sunny days usually mean more spending out and about.",
     "cold": "Cold days push up coffee and heating costs.",
     "wind": "A normal day for your spending.",
     "cloudy": "A normal day for your spending.",
