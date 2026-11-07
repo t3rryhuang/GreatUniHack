@@ -1,0 +1,4 @@
+# Local development only (not deployed to Vercel)
+-r requirements.txt
+gradio>=4.0.0
+pytest>=8.0.0
