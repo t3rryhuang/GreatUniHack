@@ -73,7 +73,14 @@ protocol VoiceServicing: AnyObject, Sendable {
     var isSpeaking: Bool { get }
     func speak(_ text: String)
     func stopSpeaking()
+    /// Records the user's question and returns it as text.
     func transcribe() async throws -> String
+    /// Ends a recording started by `transcribe()` early (the user tapped the mic again).
+    func stopListening()
+}
+
+extension VoiceServicing {
+    func stopListening() {}
 }
 
 /// Arenas: create, join, sync spending and settle. Replaces Supabase + Solana.

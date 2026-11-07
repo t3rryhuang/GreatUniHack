@@ -33,10 +33,30 @@ final class ChatViewModel {
         }
     }
 
-    func listen(model: AppModel) async {
+    var voiceError: String?
+
+    /// Tap once to start recording; it stops after a pause, or tap again to stop.
+    func toggleListening(model: AppModel) async {
+        if isListening {
+            model.services.voice.stopListening()
+            return
+        }
+        voiceError = nil
         isListening = true
-        let text = try? await model.services.voice.transcribe()
-        isListening = false
-        if let text { await send(model: model, text: text) }
+        defer { isListening = false }
+        do {
+            let text = try await withTaskCancellationHandler {
+                try await model.services.voice.transcribe()
+            } onCancel: {
+                Task { @MainActor in model.services.voice.stopListening() }
+            }
+            await send(model: model, text: text)
+        } catch is CancellationError {
+            return
+        } catch {
+            voiceError = error.localizedDescription
+        }
     }
+
+    func listen(model: AppModel) async { await toggleListening(model: model) }
 }

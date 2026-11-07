@@ -1,8 +1,7 @@
 import SwiftUI
 
-/// Holds one implementation of every service. The app uses `.mock` today.
-/// To connect the real backend, build a container with real implementations
-/// in `NovaApp` and nothing else changes.
+/// Holds one implementation of every service. `.live()` uses the Vercel backend
+/// for arenas, AI insights, chat and voice; `.mock()` is fully on-device.
 struct ServiceContainer {
     let auth: AuthServicing
     let transactions: TransactionServicing
@@ -23,6 +22,24 @@ struct ServiceContainer {
             chat: MockChatService(),
             voice: SystemVoiceService(),
             arenas: MockArenaService(savings: savings, auth: auth),
+            savings: savings,
+            subscription: MockSubscriptionService()
+        )
+    }
+
+    /// Arenas, insights, chat and read-aloud go to the backend. Sign-in, transactions,
+    /// the savings account and the Pro plan stay on-device.
+    static func live(baseURL: URL) -> ServiceContainer {
+        let client = BackendClient(baseURL: baseURL)
+        let auth = MockAuthService()
+        let savings = MockSavingsService()
+        return ServiceContainer(
+            auth: auth,
+            transactions: MockTransactionService(),
+            insights: RemoteInsightsService(client: client),
+            chat: RemoteChatService(client: client),
+            voice: ElevenLabsVoiceService(client: client),
+            arenas: RemoteArenaService(client: client, savings: savings, auth: auth),
             savings: savings,
             subscription: MockSubscriptionService()
         )

@@ -2,9 +2,11 @@ import Foundation
 
 /// Mock predictions and insights computed on-device from the user's transactions.
 /// The real backend (multi-model consensus) will replace this behind `InsightsServicing`.
-final class MockInsightsService: InsightsServicing {
+class MockInsightsService: InsightsServicing {
     private let calendar = Calendar.current
     private let models = ["Claude", "Gemini", "GPT"]
+
+    init() {}
 
     func weather() async throws -> Weather {
         await simulateLatency(250)

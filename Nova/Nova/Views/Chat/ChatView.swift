@@ -38,7 +38,20 @@ struct ChatView: View {
                 }
             }
             .background(NovaColor.page)
-            .safeAreaInset(edge: .bottom) { inputBar }
+            .safeAreaInset(edge: .bottom) {
+                VStack(spacing: Spacing.xs) {
+                    if viewModel.isListening {
+                        Text("Listening… pause or tap the microphone to send")
+                            .font(.novaCaption).foregroundStyle(NovaColor.body)
+                    } else if let error = viewModel.voiceError {
+                        Label(error, systemImage: "exclamationmark.circle")
+                            .font(.novaCaption).foregroundStyle(NovaColor.error)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, Spacing.md)
+                    }
+                    inputBar
+                }
+            }
             .navigationTitle("Ask Nova")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -71,8 +84,9 @@ struct ChatView: View {
                     .frame(width: 44, height: 44)
                     .background(viewModel.isListening ? NovaColor.action : NovaColor.lilac, in: Circle())
             }
-            .accessibilityLabel(viewModel.isListening ? "Listening" : "Ask by voice")
-            .disabled(viewModel.isListening || viewModel.isTyping)
+            .accessibilityLabel(viewModel.isListening ? "Stop listening" : "Ask by voice")
+            .accessibilityHint(viewModel.isListening ? "Stops recording and sends your question" : "Records your question. Stops when you pause.")
+            .disabled(viewModel.isTyping)
 
             TextField("Ask about your money", text: $viewModel.draft, axis: .vertical)
                 .lineLimit(1...4)

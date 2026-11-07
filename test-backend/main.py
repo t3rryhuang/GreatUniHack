@@ -23,10 +23,7 @@ from datetime import date, datetime, timedelta
 logger = logging.getLogger(__name__)
 from pathlib import Path
 
-import anthropic
 import pdfplumber
-from google import genai
-from openai import AsyncOpenAI
 from dotenv import load_dotenv
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
@@ -89,9 +86,12 @@ logging.getLogger("context_service").info(
 # Config
 # ---------------------------------------------------------------------------
 
-ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+# Provider availability (True when either Runware or the native key is configured). See llm.py.
+import llm  # noqa: E402  (imported after load_dotenv so it sees .env)
+
+ANTHROPIC_API_KEY = llm.ANTHROPIC_READY
+GEMINI_API_KEY = llm.GEMINI_READY
+OPENAI_API_KEY = llm.OPENAI_READY
 
 # Week-ahead context (weather + holidays). If unset, use placeholder and set context_unavailable.
 USER_LAT = os.getenv("USER_LAT")
@@ -137,6 +137,12 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+import arena  # noqa: E402
+import nova_api  # noqa: E402
+
+app.include_router(arena.router)
+app.include_router(nova_api.router)
 
 MAX_TRANSACTIONS = 200
 MAX_LINES = 4000
@@ -407,18 +413,12 @@ async def extract_transactions_from_pdf(pdf_text: str) -> list[dict]:
         return []
 
     try:
-        client = AsyncOpenAI(api_key=OPENAI_API_KEY)
-        response = await client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
+        content = await llm.gpt([
                 {"role": "system", "content": PDF_TRANSACTION_EXTRACTION_PROMPT},
                 {"role": "user", "content": f"Extract transactions from this bank statement:\n\n{pdf_text[:30000]}"}
-            ],
-            max_tokens=4000,
-            temperature=0.1,
-        )
+            ], max_tokens=4000, temperature=0.1)
 
-        result_text = response.choices[0].message.content.strip()
+        result_text = content.strip()
 
         # Clean up response - remove markdown code blocks if present
         if result_text.startswith("```json"):
@@ -534,14 +534,7 @@ async def ask_claude(data_str: str) -> str:
         return "[SKIPPED] ANTHROPIC_API_KEY not set"
 
     try:
-        client = anthropic.AsyncAnthropic(api_key=ANTHROPIC_API_KEY)
-        message = await client.messages.create(
-            model="claude-haiku-4-5-20251001",
-            max_tokens=1024,
-            system=SYSTEM_PROMPT,
-            messages=[{"role": "user", "content": data_str}],
-        )
-        return message.content[0].text
+        return await llm.claude([{"role": "user", "content": data_str}], max_tokens=1024, system=SYSTEM_PROMPT)
     except Exception as e:
         return f"[ERROR] Claude failed: {e}"
 
@@ -552,12 +545,7 @@ async def ask_gemini(data_str: str) -> str:
         return "[SKIPPED] GEMINI_API_KEY not set"
 
     try:
-        client = genai.Client(api_key=GEMINI_API_KEY)
-        response = await client.aio.models.generate_content(
-            model="gemini-2.5-flash-lite",
-            contents=f"{SYSTEM_PROMPT}\n\n{data_str}",
-        )
-        return response.text
+        return await llm.gemini(f"{SYSTEM_PROMPT}\n\n{data_str}")
     except Exception as e:
         return f"[ERROR] Gemini failed: {e}"
 
@@ -568,16 +556,11 @@ async def ask_openai(data_str: str) -> str:
         return "[SKIPPED] OPENAI_API_KEY not set"
 
     try:
-        client = AsyncOpenAI(api_key=OPENAI_API_KEY)
-        response = await client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
+        content = await llm.gpt([
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {"role": "user", "content": data_str},
-            ],
-            max_tokens=1024,
-        )
-        return response.choices[0].message.content
+            ], max_tokens=1024)
+        return content
     except Exception as e:
         return f"[ERROR] OpenAI failed: {e}"
 
@@ -737,13 +720,7 @@ async def ask_claude_calendar(data_str: str, claude_result: str, gemini_result: 
     )
 
     try:
-        client = anthropic.AsyncAnthropic(api_key=ANTHROPIC_API_KEY)
-        message = await client.messages.create(
-            model="claude-haiku-4-5-20251001",
-            max_tokens=2048,
-            messages=[{"role": "user", "content": f"{prompt}\n\n{combined}"}],
-        )
-        return message.content[0].text
+        return await llm.claude([{"role": "user", "content": f"{prompt}\n\n{combined}"}], max_tokens=2048)
     except Exception as e:
         return f"[ERROR] Claude calendar failed: {e}"
 
@@ -800,13 +777,7 @@ async def _ask_calendar_candidate_claude(
     )
     body = f"{prompt}\n\n=== Raw Transaction Data ===\n{data_str}\n\n=== Model Predictions ===\n{combined_tables}"
     try:
-        client = anthropic.AsyncAnthropic(api_key=ANTHROPIC_API_KEY)
-        message = await client.messages.create(
-            model="claude-haiku-4-5-20251001",
-            max_tokens=2048,
-            messages=[{"role": "user", "content": body}],
-        )
-        return message.content[0].text or ""
+        return await llm.claude([{"role": "user", "content": body}], max_tokens=2048)
     except Exception as e:
         return f"[ERROR] {e}"
 
@@ -825,12 +796,7 @@ async def _ask_calendar_candidate_gemini(
     )
     body = f"{prompt}\n\n=== Raw Transaction Data ===\n{data_str}\n\n=== Model Predictions ===\n{combined_tables}"
     try:
-        client = genai.Client(api_key=GEMINI_API_KEY)
-        response = await client.aio.models.generate_content(
-            model="gemini-2.5-flash-lite",
-            contents=body,
-        )
-        return response.text or ""
+        return await llm.gemini(body)
     except Exception as e:
         return f"[ERROR] {e}"
 
@@ -849,13 +815,8 @@ async def _ask_calendar_candidate_openai(
     )
     body = f"{prompt}\n\n=== Raw Transaction Data ===\n{data_str}\n\n=== Model Predictions ===\n{combined_tables}"
     try:
-        client = AsyncOpenAI(api_key=OPENAI_API_KEY)
-        response = await client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[{"role": "user", "content": body}],
-            max_tokens=2048,
-        )
-        return (response.choices[0].message.content or "").strip()
+        content = await llm.gpt([{"role": "user", "content": body}], max_tokens=2048)
+        return (content or "").strip()
     except Exception as e:
         return f"[ERROR] {e}"
 
@@ -876,13 +837,7 @@ async def _ask_judge_calendar(
         "=== Candidate OpenAI ===\n" + openai_cal
     )
     try:
-        client = anthropic.AsyncAnthropic(api_key=ANTHROPIC_API_KEY)
-        message = await client.messages.create(
-            model="claude-haiku-4-5-20251001",
-            max_tokens=2048,
-            messages=[{"role": "user", "content": body}],
-        )
-        return message.content[0].text or ""
+        return await llm.claude([{"role": "user", "content": body}], max_tokens=2048)
     except Exception as e:
         return f"[ERROR] {e}"
 
@@ -1013,6 +968,11 @@ async def health():
             "gemini": "ready" if GEMINI_API_KEY else "no key",
             "openai": "ready" if OPENAI_API_KEY else "no key",
         },
+        "llm_gateway": "runware" if llm.USE_RUNWARE else "native",
+        "models": {"claude": llm.CLAUDE_MODEL, "gemini": llm.GEMINI_MODEL, "gpt": llm.GPT_MODEL},
+        "tts": "elevenlabs" if nova_api.ELEVENLABS_API_KEY else "off",
+        "stt": "elevenlabs" if nova_api.ELEVENLABS_API_KEY else "off",
+        "arena_storage": arena.storage_backend(),
     }
 
 
@@ -1215,14 +1175,8 @@ Predicted Spending:
 Tips:"""
 
     try:
-        client = AsyncOpenAI(api_key=OPENAI_API_KEY)
-        response = await client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[{"role": "user", "content": prompt}],
-            max_tokens=150,
-            temperature=0.7,
-        )
-        return response.choices[0].message.content
+        content = await llm.gpt([{"role": "user", "content": prompt}], max_tokens=150, temperature=0.7)
+        return content
     except Exception as e:
         return f"[ERROR] Budget tips failed: {e}"
 
@@ -1327,14 +1281,8 @@ Data:
 {transaction_data[:25000]}"""
 
     try:
-        client = AsyncOpenAI(api_key=OPENAI_API_KEY)
-        response = await client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[{"role": "user", "content": full_content}],
-            max_tokens=500,
-            temperature=0.2,
-        )
-        out = response.choices[0].message.content
+        content = await llm.gpt([{"role": "user", "content": full_content}], max_tokens=500, temperature=0.2)
+        out = content
         if has_credit:
             out = _validate_credit_output(out)
         return out
@@ -1388,14 +1336,8 @@ Financial Summary:
 Respond in 2-4 short sentences. If the data is from a credit card or does not support runway, say so and do not give a number of months. Otherwise give estimated runway and one brief note. Be concise."""
 
     try:
-        client = AsyncOpenAI(api_key=OPENAI_API_KEY)
-        response = await client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[{"role": "user", "content": prompt}],
-            max_tokens=200,
-            temperature=0.3,
-        )
-        out = response.choices[0].message.content
+        content = await llm.gpt([{"role": "user", "content": prompt}], max_tokens=200, temperature=0.3)
+        out = content
         # Output validation: if summary suggests credit and response still claims runway, rewrite
         if _summary_suggests_credit_card(financial_summary):
             if "months without income" in out.lower() or ("month" in out.lower() and "runway" in out.lower()):
