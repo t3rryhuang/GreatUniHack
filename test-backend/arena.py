@@ -133,17 +133,47 @@ def _view(arena: dict, user_id: str) -> dict:
     return out
 
 
+def _ratio(numerator: float, denominator: float | None) -> float | None:
+    if denominator is None or denominator <= 0:
+        return None
+    return numerator / denominator
+
+
+def _teen_key(m: dict, mode: str, ts):
+    """Teen arenas (same as ArenaRules.teenOrder in the iOS app). Everything is relative
+    to the member's own baseline or target; ties are broken by name, never by £."""
+    name = m.get("name", "")
+    if mode == "budget_guardian":
+        base = m.get("baselineSpend")
+        r = _ratio(base - m["currentSpend"], base) if base is not None else None
+        return (1, 0.0, name) if r is None else (0, -r, name)
+    if mode == "savings_sprint":
+        p = _ratio(m["currentSavings"], m.get("personalTarget"))
+        if p is None:
+            return (2, 0.0, 0.0, name)
+        if p >= 1:
+            return (0, ts(m.get("targetReachedAt")), 0.0, name)
+        return (1, 0.0, -p, name)
+    if mode == "most_improved":
+        r = _reduction(m)
+        return (1, 0.0, name) if r is None else (0, -r, name)
+    return None
+
+
 def _standings(arena: dict) -> list[dict]:
     target = arena["targetAmount"]
     far = float("inf")
     active = [m for m in arena["members"] if not m.get("isEliminated")]
     mode = arena["mode"]
+    teen = bool(arena.get("teen"))
 
     def ts(s: str | None) -> float:
         d = _parse(s)
         return d.timestamp() if d else far
 
     def key(m: dict):
+        if teen and mode != "vice_streak":
+            return _teen_key(m, mode, ts)
         if mode == "most_improved":
             # Same order as ArenaRules.mostImprovedOrder in the iOS app: members with a
             # baseline first, biggest % cut, then lower current spend, then name.
@@ -179,9 +209,24 @@ def _can_settle(arena: dict) -> str | None:
         return "You need at least 2 members to settle."
     if _parse(arena["endDate"]) <= _now():
         return None
-    if arena["mode"] == "savings_sprint" and any(m["currentSavings"] >= arena["targetAmount"] for m in arena["members"]):
+    if arena["mode"] == "savings_sprint" and any(_reached_target(arena, m) for m in arena["members"]):
         return None
     return "Settlement opens when the arena ends."
+
+
+def _reached_target(arena: dict, m: dict) -> bool:
+    if arena.get("teen"):
+        p = _ratio(m["currentSavings"], m.get("personalTarget"))
+        return p is not None and p >= 1
+    return m["currentSavings"] >= arena["targetAmount"]
+
+
+def _limit(arena: dict, m: dict) -> float:
+    """The spending limit a member is measured against (their own baseline in teen Budget Guardian)."""
+    if arena.get("teen") and arena["mode"] == "budget_guardian":
+        base = m.get("baselineSpend")
+        return base if base is not None and base > 0 else float("inf")
+    return arena["targetAmount"]
 
 
 def _new_member(user_id: str, name: str) -> dict:
@@ -196,6 +241,7 @@ def _new_member(user_id: str, name: str) -> dict:
         "targetReachedAt": None,
         "lastSyncedAt": _iso(_now()),
         "baselineSpend": None,
+        "personalTarget": None,
     }
 
 
@@ -210,6 +256,8 @@ class CreateArena(BaseModel):
     stakeAmount: float = Field(ge=0)
     viceCategory: str | None = None
     endDate: str
+    # Teen arena: personal limits and targets, % only. Optional for older clients.
+    teen: bool = False
 
 
 class JoinArena(BaseModel):
@@ -219,8 +267,10 @@ class JoinArena(BaseModel):
 class SyncArena(BaseModel):
     currentSpend: float = 0
     currentSavings: float = 0
-    # Most Improved only. Optional so older clients keep working.
+    # Most Improved and teen Budget Guardian. Optional so older clients keep working.
     baselineSpend: float | None = None
+    # Teen Savings Sprint: the member's own target. Optional.
+    personalTarget: float | None = None
 
 
 @router.get("")
@@ -262,6 +312,7 @@ async def create_arena(body: CreateArena, x_user_id: str | None = Header(None), 
         "status": "pending",
         "members": [_new_member(user, (x_user_name or "").strip())],
         "winnerID": None,
+        "teen": True if body.teen else None,
     }
     await _save(arena)
     await kv_sadd(f"user:{user}:arenas", arena_id)
@@ -328,14 +379,16 @@ async def sync_arena(arena_id: str, body: SyncArena, x_user_id: str | None = Hea
         member["currentSavings"] = round(max(member["currentSavings"], body.currentSavings), 2)
         if body.baselineSpend is not None:
             member["baselineSpend"] = round(body.baselineSpend, 2)
-        over = arena["mode"] in LIMIT_MODES and member["currentSpend"] > arena["targetAmount"]
+        if body.personalTarget is not None:
+            member["personalTarget"] = round(body.personalTarget, 2)
+        over = arena["mode"] in LIMIT_MODES and member["currentSpend"] > _limit(arena, member)
         if over and not member.get("exceededAt"):
             member["exceededAt"] = now
             if arena["mode"] == "vice_streak":
                 member["isEliminated"] = True
         if (
             arena["mode"] == "savings_sprint"
-            and member["currentSavings"] >= arena["targetAmount"]
+            and _reached_target(arena, member)
             and not member.get("targetReachedAt")
         ):
             member["targetReachedAt"] = now
