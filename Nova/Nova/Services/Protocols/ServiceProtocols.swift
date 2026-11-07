@@ -13,6 +13,8 @@ enum ServiceError: LocalizedError, Equatable {
     case insufficientFunds
     case unreadableFile
     case paymentDeclined
+    case invalidAmount
+    case nothingDue
     case network(String)
 
     var errorDescription: String? {
@@ -25,6 +27,8 @@ enum ServiceError: LocalizedError, Equatable {
         case .insufficientFunds: "There isn't enough money in your savings account for this stake."
         case .unreadableFile: "We couldn't read that file. Use a JSON, CSV or PDF statement."
         case .paymentDeclined: "Your card was declined. Check the details and try again."
+        case .invalidAmount: "Enter an amount of £1 or more."
+        case .nothingDue: "There's nothing to pay right now."
         case .network(let message): message
         }
     }
@@ -135,5 +139,17 @@ protocol ReadinessServicing: AnyObject, Sendable {
     /// Demo only: marks today's quest as completed now instead of at the end of the day.
     func completeTodaysQuest() async -> ReadinessProgress
     /// Demo only: starting progress that fits the life stage.
+    func resetDemo(stage: LifeStage) async
+}
+
+/// Family loans and shared bills (Teen mode). On-device in both containers.
+protocol FamilyServicing: AnyObject, Sendable {
+    func state() async -> FamilyState
+    func requestLoan(purpose: String, amount: Double, instalments: Int, lenderName: String, relationship: String) async throws -> FamilyLoan
+    /// Demo: the trusted adult answers after a short delay.
+    func awaitApproval(loanID: UUID) async throws -> FamilyLoan
+    func payInstalment(loanID: UUID) async throws -> FamilyPayment
+    func addBill(name: String, amount: Double, dayOfMonth: Int, partnerName: String, relationship: String) async throws -> SharedBill
+    func payBill(billID: UUID) async throws -> FamilyPayment
     func resetDemo(stage: LifeStage) async
 }

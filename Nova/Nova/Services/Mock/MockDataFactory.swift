@@ -177,6 +177,35 @@ enum MockDataFactory {
         return (approved, payments)
     }
 
+    /// Jamie's family set-up, matching the teen transactions.
+    static func teenFamily(now: Date = .now) -> FamilyState {
+        let calendar = Calendar(identifier: .gregorian)
+        let loan = teenLoanSchedule(now: now)
+        let phone = teenPhoneShare(now: now)
+        return FamilyState(
+            loans: [FamilyLoan(
+                purpose: "Driving lessons",
+                amount: 120,
+                instalments: 4,
+                lenderName: "Mum",
+                relationship: "Parent",
+                requestedAt: calendar.date(byAdding: .day, value: -1, to: loan.approved) ?? loan.approved,
+                approvedAt: loan.approved,
+                status: .approved,
+                payments: loan.payments.map { FamilyPayment(due: $0.due, amount: $0.amount, paid: $0.paid) }
+            )],
+            bills: [SharedBill(
+                name: "Phone bill share",
+                amount: 10,
+                dayOfMonth: 12,
+                partnerName: "Mum",
+                relationship: "Parent",
+                startDate: phone.first?.due ?? now,
+                payments: phone.map { FamilyPayment(due: $0.due, amount: $0.amount, paid: $0.paid) }
+            )]
+        )
+    }
+
     static let teenHabits: [(SpendingCategory, [String], ClosedRange<Double>, Double)] = [
         (.dining, ["Greggs", "Subway", "Nando's", "McDonald's", "Chicken Cottage"], 3...11, 3.2),
         (.transport, ["Bee Network Bus", "Metrolink"], 1...2.8, 4.5),

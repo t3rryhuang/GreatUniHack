@@ -54,6 +54,13 @@ struct ProfileView: View {
                 }
             }
 
+            if model.isTeen {
+                Section("Teen") {
+                    NavigationLink { FamilyView() } label: { Label("Family loans and bills", systemImage: "person.2.fill") }
+                    NavigationLink { ParentPreviewView() } label: { Label("What your parent sees", systemImage: "eye.fill") }
+                }
+            }
+
             if !model.isPro {
                 Section {
                     Button {

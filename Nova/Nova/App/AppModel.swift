@@ -20,6 +20,8 @@ final class AppModel {
     /// The latest Readiness Score and the data behind it.
     private(set) var readiness: ReadinessSnapshot?
     private(set) var readinessProgress = ReadinessProgress()
+    /// Family loans and shared bills (Teen mode).
+    private(set) var family = FamilyState()
     var errorMessage: String?
 
     /// Presentation state for app-wide sheets.
@@ -116,6 +118,7 @@ final class AppModel {
         } catch {
             errorMessage = error.localizedDescription
         }
+        family = await services.family.state()
         await refreshReadiness()
     }
 
@@ -174,7 +177,7 @@ final class AppModel {
             transactions: transactions,
             summary: summary,
             savingsBalance: savingsAccount?.balance ?? 0,
-            familyPayments: [],
+            familyPayments: isTeen ? family.scheduledPayments() : [],
             accountStart: min(user?.memberSince ?? .now, earliest)
         )
         readiness = await services.readiness.evaluate(input)
@@ -206,6 +209,36 @@ final class AppModel {
         await refreshReadiness()
     }
 
+    // MARK: Family
+
+    /// Sends a loan request; the simulated adult approves it after a short delay,
+    /// then the money arrives as a transfer.
+    func requestFamilyLoan(purpose: String, amount: Double, instalments: Int, lenderName: String, relationship: String) async throws {
+        let request = try await services.family.requestLoan(purpose: purpose, amount: amount, instalments: instalments,
+                                                            lenderName: lenderName, relationship: relationship)
+        family = await services.family.state()
+        let approved = try await services.family.awaitApproval(loanID: request.id)
+        family = await services.family.state()
+        if approved.status == .approved {
+            try await addTransaction(Transaction(date: .now, description: "Transfer from \(approved.lenderName) - \(approved.purpose.lowercased()) loan",
+                                                 amount: approved.amount, category: .transfer))
+        }
+    }
+
+    func payInstalment(_ loan: FamilyLoan) async throws {
+        let payment = try await services.family.payInstalment(loanID: loan.id)
+        family = await services.family.state()
+        try await addTransaction(Transaction(date: .now, description: "Transfer to \(loan.lenderName) - loan repayment",
+                                             amount: -payment.amount, category: .transfer))
+    }
+
+    func payBill(_ bill: SharedBill) async throws {
+        let payment = try await services.family.payBill(billID: bill.id)
+        family = await services.family.state()
+        try await addTransaction(Transaction(date: .now, description: "Transfer to \(bill.partnerName) - \(bill.name.lowercased())",
+                                             amount: -payment.amount, category: .transfer))
+    }
+
     // MARK: Demo
 
     /// Profile > Demo switch: changes the stage and loads matching demo data.
@@ -227,6 +260,7 @@ final class AppModel {
         _ = try? await services.transactions.loadDemoData(stage: newStage)
         await services.readiness.resetDemo(stage: newStage)
         await services.arenas.resetDemo(stage: newStage)
+        await services.family.resetDemo(stage: newStage)
     }
 
     // MARK: Plan

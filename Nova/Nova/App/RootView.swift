@@ -55,19 +55,42 @@ struct LaunchView: View {
 }
 
 struct MainTabView: View {
+    @State private var tab = 0
+    #if DEBUG
+    @State private var debugScreen: DebugScreen?
+    #endif
+
     var body: some View {
-        TabView {
+        TabView(selection: $tab) {
             HomeView()
                 .tabItem { Label("Home", systemImage: "house") }
+                .tag(0)
             InsightsView()
                 .tabItem { Label("Insights", systemImage: "chart.bar") }
+                .tag(1)
             HistoryView()
                 .tabItem { Label("History", systemImage: "clock") }
+                .tag(2)
             ArenaListView()
                 .tabItem { Label("Arena", systemImage: "trophy") }
+                .tag(3)
             SimulatorView()
                 .tabItem { Label("Simulator", systemImage: "slider.horizontal.3") }
+                .tag(4)
         }
+        #if DEBUG
+        .task {
+            guard let requested = DebugScreen.requested else { return }
+            UserDefaults.standard.set(true, forKey: "nova.arenaIntroSeen")
+            if let index = requested.tab { tab = index } else {
+                try? await Task.sleep(for: .milliseconds(600))
+                debugScreen = requested
+            }
+        }
+        .sheet(item: $debugScreen) { screen in
+            if screen == .chat { screen.destination } else { NavigationStack { screen.destination } }
+        }
+        #endif
         // Profile is reached from the avatar button on every tab (see `profileToolbar`),
         // keeping the tab bar at Apple's recommended maximum of five tabs.
     }

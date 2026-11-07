@@ -26,6 +26,12 @@ struct HomeView: View {
                             WeeklyBossCard(boss: boss)
                         }
                     }
+                    if model.isTeen {
+                        NavigationLink { FamilyView() } label: {
+                            RowLink(title: "Family", subtitle: "Loans and shared bills with someone you trust", symbol: "person.2.fill")
+                        }
+                        .buttonStyle(.plain)
+                    }
                     if let briefing = viewModel.briefing {
                         BriefingCard(briefing: briefing)
                     }

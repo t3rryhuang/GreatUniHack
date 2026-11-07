@@ -12,6 +12,7 @@ struct ServiceContainer {
     let savings: SavingsServicing
     let subscription: SubscriptionServicing
     let readiness: ReadinessServicing
+    let family: FamilyServicing
 
     static func mock() -> ServiceContainer {
         let auth = MockAuthService()
@@ -25,7 +26,8 @@ struct ServiceContainer {
             arenas: MockArenaService(savings: savings, auth: auth),
             savings: savings,
             subscription: MockSubscriptionService(),
-            readiness: LocalReadinessService()
+            readiness: LocalReadinessService(),
+            family: LocalFamilyService()
         )
     }
 
@@ -44,7 +46,8 @@ struct ServiceContainer {
             arenas: RemoteArenaService(client: client, savings: savings, auth: auth),
             savings: savings,
             subscription: MockSubscriptionService(),
-            readiness: LocalReadinessService()
+            readiness: LocalReadinessService(),
+            family: LocalFamilyService()
         )
     }
 }
