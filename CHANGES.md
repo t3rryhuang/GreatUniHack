@@ -112,7 +112,7 @@ Nova becomes a path from 16 to a first real credit product: one character and on
 - Piggy Bank: goal from your own income, shake to hear coins (sound and haptics scale with progress to your own goal), promise-to-myself weekly transfer, example matched bonus, privacy settings.
 - Leagues ranked by points and improvement only (`LeagueServicing`).
 - Ask Nova passes the life stage; teen answers never recommend credit.
-- Fairness: Reliability is an on-time rate whatever the size; Resilience no longer rewards a bigger balance (teens: weeks of own essentials covered); Endurance adds a saving streak; hardship protection eases goals and limits when income drops more than 30%. The weekly limit is now rounded to the penny, not the pound (found by the fairness check). DEBUG Fairness check screen: Teen A 648, Teen B 648, poor habits 389.
+- Fairness: Reliability is an on-time rate whatever the size; Resilience no longer rewards a bigger balance (teens: weeks of own essentials covered); Endurance adds a saving streak; hardship protection eases goals and limits when income drops more than 30%. The weekly limit is now rounded to the penny, not the pound (found by the fairness check). DEBUG Fairness check screen: Teen A 681, Teen B 681, poor habits 328. Recurring-bill detection is stricter (every gap 20-40 days, at least 70% of that merchant's payments) so everyday shops are no longer mistaken for late bills.
 - Insights: pastel seasonal spending and weekly recap redesign.
 - DEBUG launch helpers: `-NovaScreen <name>`, `-NovaAutoplay`, `-NovaAutoShake`, `-NovaTeenDemo`, `-NovaTeenADemo`.
 

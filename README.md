@@ -110,7 +110,7 @@ The score and the teen features are built so habits count and money doesn't:
 7. **F7, everyone can take part.** Any trusted adult can lend or share a bill; teens with nobody to borrow from can use a promise-to-myself transfer instead. Daily caps stop points being about free time.
 8. **F8, hardship protection.** If income drops by more than 30% month on month, goals are eased and the weekly limit follows the last 4 weeks, with a kind message.
 
-The DEBUG-only **Fairness check** (Profile > Demo) scores Teen A (about £15 a week pocket money) and Teen B (about £100 a week from a job) with the same habits side by side, plus Teen B with poor habits. Current result: **Teen A 648, Teen B 648, both Gold; Teen B with poor habits 389, Silver.**
+The DEBUG-only **Fairness check** (Profile > Demo) scores Teen A (about £15 a week pocket money) and Teen B (about £100 a week from a job) with the same habits side by side, plus Teen B with poor habits. Current result: **Teen A 681, Teen B 681, both Gold; Teen B with poor habits 328, Silver.**
 
 ---
 
@@ -255,7 +255,7 @@ xcodebuild -project Nova.xcodeproj -scheme Nova \
 | `-NovaScreen <name>` | DEBUG: open a screen at launch: `readiness`, `family`, `parent`, `graduation`, `report`, `quest`, `level`, `piggy`, `league`, `fairness`, `seasons`, `insights`, `arena`, `simulator`, `chat`, `profile` |
 | `-NovaAutoplay` / `-NovaAutoShake` | DEBUG: play a Money Quest level / shake the Piggy Bank automatically |
 
-**2-minute demo:** launch with `-NovaTeenDemo` → Home shows Jamie's Readiness Score, daily quest, weekly boss, Money Quest and Piggy Bank → open the Piggy Bank and shake → play chapter 7 level 1 (money mules) → Profile > Demo > Fairness check (Teen A and Teen B both 648) → Road to 18 and the Readiness Report → Profile > Demo > Simulate 18th birthday.
+**2-minute demo:** launch with `-NovaTeenDemo` → Home shows Jamie's Readiness Score, daily quest, weekly boss, Money Quest and Piggy Bank → open the Piggy Bank and shake → play chapter 7 level 1 (money mules) → Profile > Demo > Fairness check (Teen A and Teen B both 681) → Road to 18 and the Readiness Report → Profile > Demo > Simulate 18th birthday.
 
 ### Backend Setup (local dev only)
 
@@ -430,3 +430,7 @@ uv pip install --python .venv/bin/python -r requirements-dev.txt
 The arena and chat tests use in-memory storage and a stand-in for the LLM, so they need no keys or Redis.
 
 Never commit `.env` files. They are in `.gitignore`.
+
+## Screenshots
+
+Pitch screenshots (iPhone 17 Pro Max simulator) are in [docs/screenshots](docs/screenshots): Teen Home, Readiness, Money Quest hub, a level and its summary, the Piggy Bank (light, dark and Teen A at 80%), the fairness check, Family, the borrowing sandbox, Road to 18, the Readiness Report, the parent preview, leagues, teen arenas, the pastel Insights cards and a level at the largest text size.

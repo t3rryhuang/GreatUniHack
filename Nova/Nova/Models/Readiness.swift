@@ -252,7 +252,8 @@ enum ReadinessRules {
     }
 
     /// Finds bills: the same merchant, an amount within ±15% of its usual amount,
-    /// at least 3 times, roughly monthly (median gap 25-35 days).
+    /// at least 3 times, roughly monthly (median gap 25-35 days, every gap 20-40),
+    /// and at least 70% of that merchant's payments.
     /// Transfers are left out (family payments are counted from Family instead).
     static func recurringBills(in transactions: [Transaction], now: Date, calendar: Calendar = .current) -> [RecurringBill] {
         let expenses = transactions.filter { $0.isExpense && $0.category != .transfer && $0.category != .income }
@@ -261,9 +262,11 @@ enum ReadinessRules {
         for (_, group) in groups where group.count >= 3 {
             let usual = median(group.map(\.spend))
             let similar = group.filter { abs($0.spend - usual) <= usual * 0.15 }.sorted { $0.date < $1.date }
-            guard similar.count >= 3 else { continue }
+            // A bill is most of that merchant's payments (shops you visit often aren't bills).
+            guard similar.count >= 3, Double(similar.count) >= Double(group.count) * 0.7 else { continue }
             let gaps = zip(similar, similar.dropFirst()).map { $1.date.timeIntervalSince($0.date) / 86_400 }
-            guard (25.0...35.0).contains(median(gaps)) else { continue }
+            // Roughly monthly every time, not just on average.
+            guard (25.0...35.0).contains(median(gaps)), gaps.allSatisfy({ (20.0...40.0).contains($0) }) else { continue }
             let day = Int(median(similar.map { Double(calendar.component(.day, from: $0.date)) }))
             let payments = similar.map { t in
                 ScheduledPayment(name: t.description, amount: t.spend, due: expectedDate(day: day, near: t.date, calendar: calendar), paid: t.date)

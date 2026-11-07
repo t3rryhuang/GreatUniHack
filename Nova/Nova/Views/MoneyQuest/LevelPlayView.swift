@@ -244,24 +244,40 @@ private struct OptionButton: View {
 private struct VirtualCharacterCard: View {
     let stats: [ReadinessStat: Int]
     let budget: Double
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
+        let large = typeSize.isAccessibilitySize
         NovaCard {
-            HStack {
+            let header = large ? AnyLayout(VStackLayout(alignment: .leading, spacing: Spacing.xxs)) : AnyLayout(HStackLayout())
+            header {
                 Text("Your character").font(.novaHeadline).foregroundStyle(NovaColor.brandText)
-                Spacer()
+                if !large { Spacer() }
                 Label("\(budget.gbpWhole) left", systemImage: "sterlingsign.circle.fill")
                     .font(.novaCallout.weight(.semibold)).foregroundStyle(NovaColor.action)
                     .accessibilityLabel("Virtual budget, \(budget.gbpWhole) left")
             }
             ForEach(ReadinessStat.allCases) { stat in
                 let value = stats[stat] ?? MoneyQuestConfig.startingStat
-                HStack(spacing: Spacing.xs) {
-                    Image(systemName: stat.symbol).foregroundStyle(NovaColor.action).frame(width: 22).accessibilityHidden(true)
-                    Text(stat.title).font(.novaCaption).foregroundStyle(NovaColor.heading).frame(minWidth: 80, alignment: .leading)
-                    ProbabilityBar(value: Double(value) / Double(ReadinessStat.maxPoints))
-                    Text("\(value)").font(.novaCaption.weight(.semibold)).monospacedDigit().foregroundStyle(NovaColor.heading)
-                        .frame(minWidth: 30, alignment: .trailing)
+                Group {
+                    if large {
+                        VStack(alignment: .leading, spacing: Spacing.xxs) {
+                            HStack {
+                                Text(stat.title).font(.novaCaption).foregroundStyle(NovaColor.heading)
+                                Spacer()
+                                Text("\(value)").font(.novaCaption.weight(.semibold)).monospacedDigit().foregroundStyle(NovaColor.heading)
+                            }
+                            ProbabilityBar(value: Double(value) / Double(ReadinessStat.maxPoints))
+                        }
+                    } else {
+                        HStack(spacing: Spacing.xs) {
+                            Image(systemName: stat.symbol).foregroundStyle(NovaColor.action).frame(width: 22).accessibilityHidden(true)
+                            Text(stat.title).font(.novaCaption).foregroundStyle(NovaColor.heading).frame(minWidth: 80, alignment: .leading)
+                            ProbabilityBar(value: Double(value) / Double(ReadinessStat.maxPoints))
+                            Text("\(value)").font(.novaCaption.weight(.semibold)).monospacedDigit().foregroundStyle(NovaColor.heading)
+                                .frame(minWidth: 30, alignment: .trailing)
+                        }
+                    }
                 }
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel(stat.title)
