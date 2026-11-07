@@ -88,7 +88,8 @@ struct LaunchView: View {
 }
 
 struct MainTabView: View {
-    @State private var tab = 0
+    // Launch with `-NovaTab 4` to open on a given tab (handy for demos and screenshots).
+    @State private var tab = UserDefaults.standard.integer(forKey: "NovaTab")
     #if DEBUG
     @State private var debugScreen: DebugScreen?
     #endif

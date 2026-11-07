@@ -265,6 +265,22 @@ async def runway(req: SummaryRequest):
     return {"months": round(months, 2), "analysis": analysis.strip()}
 
 
+# Canonical themes keep similar questions on the same cached illustration.
+WHAT_IF_THEMES = [
+    "coffee-at-home", "eat-out-less", "cook-at-home", "cheaper-rent", "move-house", "cycle-to-work",
+    "public-transport", "sell-car", "buy-car", "cancel-subscriptions", "monthly-saving", "emergency-fund",
+    "quit-job", "pay-rise", "side-hustle", "part-time-work", "holiday", "big-purchase", "pay-off-debt",
+    "nights-out", "gym-membership", "energy-bills", "groceries-budget", "shopping-less", "new-baby",
+    "pet", "study-course", "invest", "wedding", "house-deposit",
+]
+
+WHAT_IF_ICONS = [
+    "cup.and.saucer.fill", "fork.knife", "house.fill", "bicycle", "tram.fill", "car.fill", "tv.fill",
+    "banknote.fill", "briefcase.fill", "chart.line.uptrend.xyaxis", "airplane", "bag.fill",
+    "creditcard.fill", "wineglass.fill", "figure.run", "bolt.fill", "cart.fill", "graduationcap.fill",
+    "pawprint.fill", "heart.fill", "sterlingsign.circle.fill", "gift.fill",
+]
+
 WHAT_IF_PROMPT = """You are the "What if?" simulator in a UK banking app (user lives in Manchester).
 Question: "{question}"
 User summary: {summary}
@@ -278,16 +294,83 @@ Estimate the financial effect using their real figures. Respond with ONLY a JSON
   "beforeLabel": "short label", "beforeValue": number,
   "afterLabel": "short label", "afterValue": number,
   "confidence": integer 50-98,
-  "details": "1-2 sentences of practical context, Manchester-specific if relevant"
+  "details": "1-2 sentences of practical context, Manchester-specific if relevant",
+  "monthlyImpact": number (signed change to their monthly cash flow in £; positive = more money left each month, e.g. quitting a job is minus their income),
+  "oneOffCost": number (upfront £ cost to make the change, e.g. a bike or moving costs; 0 if none),
+  "breakdown": [up to 3 items {{"label": "short label", "amount": number (£ per month)}} that explain the figure],
+  "equivalent": "a short relatable comparison of the yearly effect, e.g. 'About a return flight to Barcelona every 3 months'",
+  "theme": "pick the closest from: {themes}. Only invent a new 1-3 word kebab-case theme if none fits",
+  "icon": "one of: {icons}",
+  "scene": "a short visual scene for an illustration of this change (people, objects, setting). No text, numbers or currency symbols"
 }}"""
+
+ILLUSTRATION_STYLE = (
+    "Flat vector editorial illustration, {scene}. Friendly, optimistic, minimal, soft shadows, "
+    "rounded shapes, purple, lilac and white colour palette with small warm accents, clean background, "
+    "British setting. No text, no letters, no numbers, no dollar signs."
+)
+ILLUSTRATION_MODEL = os.getenv("ILLUSTRATION_MODEL", "runware:100@1")  # FLUX.1 schnell: ~1.5s, fractions of a penny
+WHAT_IF_CACHE_TTL = 60 * 60 * 24  # identical question + similar finances → reuse the answer for a day
+
+
+def _slug(text: str, fallback: str = "money-change") -> str:
+    slug = re.sub(r"[^a-z0-9]+", "-", str(text).lower()).strip("-")[:40]
+    return slug or fallback
+
+
+def _projection(s: Summary, monthly_impact: float, one_off: float) -> dict:
+    """Savings balance month by month for a year, with and without the change."""
+    surplus = s.monthlyIncome - s.avgMonthly
+    baseline = [round(max(0.0, s.savings + surplus * m), 2) for m in range(13)]
+    scenario = [round(max(0.0, s.savings - one_off + (surplus + monthly_impact) * m), 2) for m in range(13)]
+    return {"baseline": baseline, "scenario": scenario}
+
+
+def _cache_key(question: str, s: Summary) -> str:
+    import hashlib
+
+    q = re.sub(r"[^a-z0-9£ ]+", "", question.lower())
+    q = re.sub(r"\s+", " ", q).strip()
+    # Round figures so small changes in transactions still hit the cache.
+    fp = f"{q}|{round(s.avgMonthly, -1)}|{round(s.monthlyIncome, -1)}|{round(s.savings, -2)}"
+    fp += "|" + ",".join(f"{c.category}:{round(c.amount, -1)}" for c in s.topCategories[:6])
+    return "whatif:v2:" + hashlib.sha1(fp.encode()).hexdigest()
 
 
 @router.post("/what-if")
 async def what_if(req: WhatIfRequest):
     _require_llm()
-    prompt = WHAT_IF_PROMPT.format(question=req.question.strip()[:300], summary=_summary_text(req.summary))
+    import store
+
+    key = _cache_key(req.question, req.summary)
     try:
-        data = _extract_json(await llm.claude([{"role": "user", "content": prompt}], max_tokens=600))
+        cached = await store.get(key)
+    except Exception:
+        cached = None
+    if cached:
+        result = json.loads(cached)
+        result["question"] = req.question
+        result["cached"] = True
+        return result
+
+    prompt = WHAT_IF_PROMPT.format(
+        question=req.question.strip()[:300], summary=_summary_text(req.summary),
+        themes=", ".join(WHAT_IF_THEMES), icons=", ".join(WHAT_IF_ICONS),
+    )
+    try:
+        data = _extract_json(await llm.claude([{"role": "user", "content": prompt}], max_tokens=900))
+        theme = _slug(data.get("theme") or "")
+        scene = str(data.get("scene") or theme.replace("-", " "))[:300]
+        icon = str(data.get("icon") or "")
+        monthly = float(data.get("monthlyImpact") or 0)
+        one_off = max(0.0, float(data.get("oneOffCost") or 0))
+        breakdown = [
+            {"label": str(b.get("label", ""))[:40], "amount": round(float(b.get("amount") or 0), 2)}
+            for b in (data.get("breakdown") or [])[:3]
+            if isinstance(b, dict) and b.get("label")
+        ]
+        from urllib.parse import quote
+
         result = {
             "question": req.question,
             "outcome": str(data["outcome"]),
@@ -300,11 +383,93 @@ async def what_if(req: WhatIfRequest):
             "afterValue": float(data.get("afterValue") or 0),
             "confidence": int(max(0, min(99, int(data.get("confidence") or 70)))),
             "details": str(data.get("details") or ""),
+            "infographic": {
+                "theme": theme,
+                "icon": icon if icon in WHAT_IF_ICONS else "sterlingsign.circle.fill",
+                "equivalent": str(data.get("equivalent") or ""),
+                "monthlyImpact": round(monthly, 2),
+                "oneOffCost": round(one_off, 2),
+                "breakdown": breakdown,
+                "projection": _projection(req.summary, monthly, one_off),
+                "illustrationPath": f"nova/illustration/{theme}.webp?scene={quote(scene)}",
+            },
         }
     except Exception as e:
         logger.exception("what-if failed")
         raise HTTPException(status_code=502, detail=f"What-if failed: {e}")
+    try:
+        await store.put(key, json.dumps(result), ttl=WHAT_IF_CACHE_TTL)
+    except Exception:
+        logger.warning("what-if cache write failed", exc_info=True)
     return result
+
+
+# ---------------------------------------------------------------------------
+# Illustrations (Runware FLUX), cached by theme
+# ---------------------------------------------------------------------------
+
+async def _generate_illustration(scene: str) -> bytes:
+    import base64
+    import uuid
+
+    if not llm.RUNWARE_API_KEY:
+        raise HTTPException(status_code=503, detail="RUNWARE_API_KEY not set")
+    task = {
+        "taskType": "imageInference",
+        "taskUUID": str(uuid.uuid4()),
+        "model": ILLUSTRATION_MODEL,
+        "positivePrompt": ILLUSTRATION_STYLE.format(scene=scene),
+        "width": 768,
+        "height": 512,
+        "numberResults": 1,
+        "outputType": "base64Data",
+        "outputFormat": "WEBP",
+    }
+    async with httpx.AsyncClient(timeout=60) as client:
+        r = await client.post(
+            "https://api.runware.ai/v1",
+            headers={"Authorization": f"Bearer {llm.RUNWARE_API_KEY}"},
+            json=[task],
+        )
+    body = r.json() if r.headers.get("content-type", "").startswith("application/json") else {}
+    if r.status_code != 200 or not body.get("data"):
+        raise HTTPException(status_code=502, detail=f"Illustration failed: {str(body.get('errors') or r.text)[:200]}")
+    return base64.b64decode(body["data"][0]["imageBase64Data"])
+
+
+@router.get("/illustration/{theme}.webp")
+async def illustration(theme: str, scene: str = ""):
+    """Returns the illustration for a theme, generating it once and caching it forever.
+
+    Similar questions map to the same theme, so after the first request the image
+    comes straight from Redis (and then from Vercel's CDN via Cache-Control).
+    """
+    import base64
+
+    import store
+
+    theme = _slug(theme)
+    key = f"illus:v1:{theme}"
+    headers = {"Cache-Control": "public, max-age=604800, s-maxage=31536000, immutable"}
+
+    cached = await store.get(key)
+    if cached:
+        return Response(content=base64.b64decode(cached), media_type="image/webp", headers={**headers, "X-Cache": "HIT"})
+
+    # Only one request generates a given theme; others wait briefly for it.
+    lock = f"illus:lock:{theme}"
+    if not await store.setnx(lock, "1", ttl=45):
+        for _ in range(40):
+            await asyncio.sleep(0.5)
+            cached = await store.get(key)
+            if cached:
+                return Response(content=base64.b64decode(cached), media_type="image/webp", headers={**headers, "X-Cache": "WAIT"})
+    try:
+        image = await _generate_illustration(scene.strip()[:300] or theme.replace("-", " "))
+        await store.put(key, base64.b64encode(image).decode())
+    finally:
+        await store.delete(lock)
+    return Response(content=image, media_type="image/webp", headers={**headers, "X-Cache": "MISS"})
 
 
 # ---------------------------------------------------------------------------

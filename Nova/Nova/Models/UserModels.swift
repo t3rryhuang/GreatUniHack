@@ -104,6 +104,43 @@ struct WhatIfResult: Identifiable, Hashable, Sendable {
     let afterValue: Double
     let confidence: Int
     let details: String
+    var infographic: WhatIfInfographic?
+}
+
+/// Visual extras for a what-if answer: a generated illustration, a 12-month
+/// savings projection with and without the change, and a short breakdown.
+struct WhatIfInfographic: Hashable, Sendable {
+    struct BreakdownItem: Hashable, Sendable {
+        let label: String
+        /// £ per month; positive saves money, negative costs money.
+        let amount: Double
+    }
+
+    /// Short slug shared by similar questions (for example "coffee-at-home"). Used as the image cache key.
+    let theme: String
+    let icon: String
+    let equivalent: String
+    let monthlyImpact: Double
+    let oneOffCost: Double
+    let breakdown: [BreakdownItem]
+    /// Savings balance at months 0...12 without the change.
+    let baseline: [Double]
+    /// Savings balance at months 0...12 with the change.
+    let scenario: [Double]
+    let illustrationURL: URL?
+
+    var yearDifference: Double { (scenario.last ?? 0) - (baseline.last ?? 0) }
+
+    /// Builds the projection on-device (used when the backend isn't available).
+    static func local(theme: String, icon: String, monthlyImpact: Double, oneOffCost: Double = 0,
+                      summary: FinancialSummary, equivalent: String = "", breakdown: [BreakdownItem] = []) -> WhatIfInfographic {
+        let surplus = summary.monthlyIncome - summary.avgMonthly
+        let baseline = (0...12).map { max(0, summary.savings + surplus * Double($0)) }
+        let scenario = (0...12).map { max(0, summary.savings - oneOffCost + (surplus + monthlyImpact) * Double($0)) }
+        return WhatIfInfographic(theme: theme, icon: icon, equivalent: equivalent, monthlyImpact: monthlyImpact,
+                                 oneOffCost: oneOffCost, breakdown: breakdown, baseline: baseline, scenario: scenario,
+                                 illustrationURL: nil)
+    }
 }
 
 enum ImportFileType: String, Sendable {

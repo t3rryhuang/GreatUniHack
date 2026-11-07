@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import SwiftUI
 
 @Observable
 final class SimulatorViewModel {
@@ -34,8 +35,11 @@ final class SimulatorViewModel {
         defer { isThinking = false }
         do {
             let result = try await model.services.insights.whatIf(text, summary: model.summary, transactions: model.transactions)
-            results.insert(result, at: 0)
-            expanded.insert(result.id)
+            // Show only the latest answer; earlier ones are cached, so asking again is instant.
+            withAnimation(.easeInOut(duration: 0.25)) {
+                results = [result]
+                expanded = [result.id]
+            }
             question = ""
             if !model.isPro { questionsUsed += 1 }
             await model.recordWisdom(.whatIf)

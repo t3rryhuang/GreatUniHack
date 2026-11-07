@@ -11,6 +11,7 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import arena  # noqa: E402
+import store  # noqa: E402
 from fastapi import FastAPI  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
 
@@ -85,9 +86,9 @@ def test_adult_arena_unchanged():
 
 @pytest.fixture
 def client(monkeypatch):
-    monkeypatch.setattr(arena, "_REDIS_URL", None)
-    monkeypatch.setattr(arena, "_REDIS_TOKEN", None)
-    arena._memory.clear()
+    monkeypatch.setattr(store, "_REDIS_URL", None)
+    monkeypatch.setattr(store, "_REDIS_TOKEN", None)
+    store._memory.clear()
     app = FastAPI()
     app.include_router(arena.router)
     return TestClient(app)
@@ -116,9 +117,9 @@ def test_teen_budget_guardian_api_tie(client):
     members = {m["name"]: m for m in r.json()["members"]}
     assert members["Amy"]["exceededAt"] is None and members["Ben"]["exceededAt"] is None
 
-    data = json.loads(arena._memory[f"arena:{a['id']}"])
+    data = json.loads(store._memory[f"arena:{a['id']}"])
     data["endDate"] = "2020-01-01T00:00:00Z"
-    arena._memory[f"arena:{a['id']}"] = json.dumps(data)
+    store._memory[f"arena:{a['id']}"] = json.dumps(data)
     s = client.post(f"/arenas/{a['id']}/settle", headers=h("amy")).json()
     assert [m["name"] for m in s["standings"]] == ["Amy", "Ben"]  # tie, name order
     assert s["payout"] == 0
