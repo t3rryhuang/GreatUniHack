@@ -21,6 +21,12 @@ struct ReadinessView: View {
                         .font(.novaCaption).foregroundStyle(NovaColor.muted)
                 }
                 ScoreHistoryCard(history: snapshot.history, change: snapshot.monthChange)
+                if model.isTeen {
+                    NavigationLink { GraduationView() } label: {
+                        RowLink(title: "Road to 18", subtitle: "Your graduation checklist and Readiness Report", symbol: "graduationcap.fill")
+                    }
+                    .buttonStyle(.plain)
+                }
                 ReadinessDisclaimer()
             } else if model.hasData {
                 LoadingCard(label: "Working out your score…")

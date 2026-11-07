@@ -58,6 +58,7 @@ struct ProfileView: View {
                 Section("Teen") {
                     NavigationLink { FamilyView() } label: { Label("Family loans and bills", systemImage: "person.2.fill") }
                     NavigationLink { ParentPreviewView() } label: { Label("What your parent sees", systemImage: "eye.fill") }
+                    NavigationLink { GraduationView() } label: { Label("Road to 18", systemImage: "graduationcap.fill") }
                 }
             }
 

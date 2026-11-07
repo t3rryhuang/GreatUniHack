@@ -366,6 +366,9 @@ struct ReadinessProgress: Codable, Hashable, Sendable {
     /// Months ("2026-11") in which the monthly shield has been used.
     var shieldMonths: [String] = []
     var lastShieldEvent: ShieldEvent?
+    /// Graduation checklist items the teen ticks themselves.
+    var votingChecked = false
+    var reportPreviewed = false
 
     init() {}
 
@@ -383,6 +386,8 @@ struct ReadinessProgress: Codable, Hashable, Sendable {
         quests = try c.decodeIfPresent([DailyQuest].self, forKey: .quests) ?? []
         shieldMonths = try c.decodeIfPresent([String].self, forKey: .shieldMonths) ?? []
         lastShieldEvent = try c.decodeIfPresent(ShieldEvent.self, forKey: .lastShieldEvent)
+        votingChecked = try c.decodeIfPresent(Bool.self, forKey: .votingChecked) ?? false
+        reportPreviewed = try c.decodeIfPresent(Bool.self, forKey: .reportPreviewed) ?? false
     }
 }
 
@@ -515,5 +520,61 @@ extension ReadinessRules {
         return (current.points,
                 points(current.onTime + n, current.total + n),
                 points(current.onTime + n - 1, current.total + n))
+    }
+}
+
+// MARK: Graduation (Teen mode)
+
+enum GraduationItem: String, CaseIterable, Identifiable, Sendable {
+    case vote, billStreak, buffer, sandbox, report
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .vote: "Register to vote early"
+        case .billStreak: "Keep your bill streak"
+        case .buffer: "Build a buffer of one month's spending"
+        case .sandbox: "Complete the borrowing sandbox"
+        case .report: "Preview your Readiness Report"
+        }
+    }
+
+    var detail: String {
+        switch self {
+        case .vote: "Lenders use the electoral register to confirm who you are. The age you can register and vote differs across England, Scotland, Wales and Northern Ireland, so check gov.uk/register-to-vote."
+        case .billStreak: "Pay your bills and repayments on time for at least 3 months in a row."
+        case .buffer: "Savings that would cover a normal month of your own spending."
+        case .sandbox: "Try a practice loan in the Simulator and see what a missed payment does."
+        case .report: "A one-page summary you can choose to share."
+        }
+    }
+
+    /// Only voting is ticked by hand; the rest are checked from your data.
+    var isManual: Bool { self == .vote }
+}
+
+extension ReadinessRules {
+    static func isDone(_ item: GraduationItem, snapshot: ReadinessSnapshot?, progress: ReadinessProgress, summary: FinancialSummary, savings: Double) -> Bool {
+        switch item {
+        case .vote: progress.votingChecked
+        case .billStreak: recentOnTimeMonths(snapshot?.payments ?? [], now: .now) >= 3
+        case .buffer: summary.avgMonthly > 0 && savings >= summary.avgMonthly
+        case .sandbox: progress.sandboxDone
+        case .report: progress.reportPreviewed
+        }
+    }
+
+    /// Consecutive months, counting back from the latest month with a payment due,
+    /// in which every payment was on time.
+    static func recentOnTimeMonths(_ payments: [ScheduledPayment], now: Date, calendar: Calendar = .current) -> Int {
+        let due = payments.filter { $0.due <= now && ($0.paid != nil || now > $0.due.addingTimeInterval(graceDays * 86_400)) }
+        let byMonth = Dictionary(grouping: due) { monthKey($0.due, calendar: calendar) }
+        var streak = 0
+        for key in byMonth.keys.sorted(by: >) {
+            guard byMonth[key]?.allSatisfy(\.isOnTime) == true else { break }
+            streak += 1
+        }
+        return streak
     }
 }

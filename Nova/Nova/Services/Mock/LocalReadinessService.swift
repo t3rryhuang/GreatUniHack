@@ -82,6 +82,18 @@ final class LocalReadinessService: ReadinessServicing {
         return state
     }
 
+    func setVotingChecked(_ done: Bool) async -> ReadinessProgress {
+        state.votingChecked = done
+        persist()
+        return state
+    }
+
+    func markReportPreviewed() async -> ReadinessProgress {
+        state.reportPreviewed = true
+        persist()
+        return state
+    }
+
     func resetDemo(stage: LifeStage) async {
         var fresh = ReadinessProgress()
         switch stage {

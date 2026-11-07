@@ -4,7 +4,7 @@ import SwiftUI
 /// DEBUG only: launch with `-NovaScreen <name>` to open a screen straight away
 /// (for checking layouts and taking pitch screenshots), for example `-NovaScreen family`.
 enum DebugScreen: String, CaseIterable, Identifiable {
-    case readiness, family, parent, profile, chat
+    case readiness, family, parent, profile, chat, graduation, report
     case insights, history, arena, simulator
 
     var id: String { rawValue }
@@ -33,6 +33,8 @@ enum DebugScreen: String, CaseIterable, Identifiable {
         case .parent: ParentPreviewView()
         case .profile: ProfileView()
         case .chat: ChatView()
+        case .graduation: GraduationView()
+        case .report: ReadinessReportView()
         case .insights, .history, .arena, .simulator: EmptyView()
         }
     }

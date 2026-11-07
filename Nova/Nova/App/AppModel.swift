@@ -48,6 +48,19 @@ final class AppModel {
     var stage: LifeStage { demoStageOverride ?? user?.stage ?? .adult }
     var isTeen: Bool { stage == .teen }
 
+    /// Date of birth used for the graduation countdown. With the demo override
+    /// and no real date, a demo 17-year-old's birthday is used.
+    var effectiveDateOfBirth: Date? {
+        if let dob = user?.dateOfBirth, LifeStage.from(dateOfBirth: dob) == stage { return dob }
+        return isTeen ? MockDataFactory.teenDateOfBirth() : user?.dateOfBirth
+    }
+
+    /// The next 18th birthday, for teens.
+    var eighteenthBirthday: Date? {
+        guard isTeen, let dob = effectiveDateOfBirth else { return nil }
+        return Calendar.current.date(byAdding: .year, value: 18, to: dob)
+    }
+
     init(services: ServiceContainer) {
         self.services = services
     }
@@ -202,6 +215,14 @@ final class AppModel {
     func completeQuestForDemo() async {
         readinessProgress = await services.readiness.completeTodaysQuest()
         await refreshReadiness()
+    }
+
+    func setVotingChecked(_ done: Bool) async {
+        readinessProgress = await services.readiness.setVotingChecked(done)
+    }
+
+    func markReportPreviewed() async {
+        readinessProgress = await services.readiness.markReportPreviewed()
     }
 
     func setWeeklyLimit(_ limit: Double?) async {

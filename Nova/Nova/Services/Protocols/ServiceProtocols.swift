@@ -138,6 +138,9 @@ protocol ReadinessServicing: AnyObject, Sendable {
     func todaysQuest(predictions: [PredictionItem]) async -> DailyQuest?
     /// Demo only: marks today's quest as completed now instead of at the end of the day.
     func completeTodaysQuest() async -> ReadinessProgress
+    /// Graduation checklist items set by hand (voting) or by opening the report.
+    func setVotingChecked(_ done: Bool) async -> ReadinessProgress
+    func markReportPreviewed() async -> ReadinessProgress
     /// Demo only: starting progress that fits the life stage.
     func resetDemo(stage: LifeStage) async
 }
