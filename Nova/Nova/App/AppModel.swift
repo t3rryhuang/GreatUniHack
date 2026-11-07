@@ -26,7 +26,10 @@ final class AppModel {
     var showAddTransaction = false
     var lockedFeature: ProFeature?
 
-    var isPro: Bool { plan == .pro }
+    /// Every feature is unlocked for everyone: there is no paid tier or free trial.
+    /// (The Pro gating code is kept so a paid plan could be switched back on later.)
+    static let allFeaturesUnlocked = true
+    var isPro: Bool { Self.allFeaturesUnlocked || plan == .pro }
     var hasData: Bool { !transactions.isEmpty }
 
     init(services: ServiceContainer) {

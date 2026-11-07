@@ -20,11 +20,6 @@ struct ProfileView: View {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(user.name).font(.novaSection).foregroundStyle(NovaColor.heading)
                             Text(user.email).font(.novaCallout).foregroundStyle(NovaColor.body)
-                            Text(model.isPro ? "Nova Pro" : "Free plan")
-                                .font(.novaCaption.weight(.semibold))
-                                .foregroundStyle(model.isPro ? NovaColor.onAction : NovaColor.action)
-                                .padding(.horizontal, Spacing.xs).padding(.vertical, 2)
-                                .background(model.isPro ? NovaColor.action : NovaColor.lilac, in: Capsule())
                         }
                     }
                     .padding(.vertical, Spacing.xxs)
@@ -89,7 +84,7 @@ struct ProfileView: View {
             }
 
             Section {
-                if model.isPro {
+                if model.isPro && !AppModel.allFeaturesUnlocked {
                     Button("Cancel Pro subscription", role: .destructive) { confirmCancel = true }
                 }
                 Button("Sign out", role: .destructive) {
